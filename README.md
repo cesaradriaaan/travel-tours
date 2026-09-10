@@ -1,4 +1,4 @@
-# Isla & Tide — Philippines Travel & Tours
+# AddyVentures Travel & Tours — Philippines Travel & Tours
 
 A React (Vite) travel & tours website prototype, built phase by phase.
 See `docs/` for the full plan, site map, UX flows, design system, and
