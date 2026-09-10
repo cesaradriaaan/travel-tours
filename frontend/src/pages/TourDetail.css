@@ -1,0 +1,149 @@
+.tour-detail {
+  padding: var(--space-4) 0 var(--space-6);
+}
+
+.tour-detail__layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  align-items: start;
+}
+
+.tour-detail__tags {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.tour-detail__tag {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: var(--seafoam);
+  color: var(--deep-water);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.tour-detail__meta {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-2);
+}
+
+.tour-detail__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tour-detail__summary {
+  font-size: 1.05rem;
+  max-width: none;
+}
+
+.tour-detail__highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.tour-detail__highlights li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink);
+}
+
+.tour-detail__highlights svg {
+  color: var(--coral-tide);
+  flex-shrink: 0;
+}
+
+.tour-detail__itinerary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.itinerary-day {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.itinerary-day__number {
+  flex-shrink: 0;
+  width: 64px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--deep-water);
+  color: var(--paper);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.itinerary-day__body h4 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  color: var(--deep-water);
+}
+
+.itinerary-day__body p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.tour-detail__sidebar {
+  position: sticky;
+  top: 90px;
+}
+
+.booking-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.booking-card__price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--deep-water);
+  font-family: var(--font-display);
+}
+
+.booking-card__price small {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+}
+
+.booking-card__btn {
+  justify-content: center;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .tour-detail__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tour-detail__sidebar {
+    position: static;
+  }
+}

@@ -1,0 +1,111 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.navbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--deep-water);
+}
+
+.navbar__links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.navbar__link {
+  position: relative;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  padding: 0.4rem 0.1rem;
+  transition: color 0.2s var(--ease);
+}
+
+.navbar__link:hover,
+.navbar__link.is-active {
+  color: var(--deep-water);
+}
+
+.navbar__link.is-active {
+  border-bottom: 2px solid var(--amber-gold);
+}
+
+.navbar__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  background: var(--coral-tide);
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.navbar__cta {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.navbar__toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--deep-water);
+  padding: 0.25rem;
+}
+
+@media (max-width: 860px) {
+  .navbar__toggle {
+    display: block;
+  }
+
+  .navbar__links {
+    position: fixed;
+    top: 61px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--paper);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-3);
+    transform: translateX(100%);
+    transition: transform 0.25s var(--ease);
+  }
+
+  .navbar__links.is-open {
+    transform: translateX(0);
+  }
+
+  .navbar__link {
+    font-size: 1.1rem;
+  }
+
+  .navbar__cta {
+    margin-top: var(--space-2);
+  }
+}

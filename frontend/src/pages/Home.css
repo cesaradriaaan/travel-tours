@@ -1,0 +1,140 @@
+.hero {
+  padding: var(--space-5) 0 var(--space-6);
+  background: linear-gradient(180deg, #fff 0%, var(--paper) 100%);
+}
+
+.hero__inner {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: var(--space-5);
+  align-items: center;
+}
+
+.hero__text h1 {
+  margin-bottom: var(--space-3);
+}
+
+.hero__text p {
+  font-size: 1.05rem;
+  margin-bottom: var(--space-3);
+}
+
+.hero__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.hero__image {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  transform: translateY(1.5rem);
+}
+
+.hero__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.home-grid__more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+}
+
+.why-us {
+  background: var(--white);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.why-us__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.why-us__item {
+  padding: var(--space-2) 0;
+}
+
+.why-us__item svg {
+  color: var(--coral-tide);
+  margin-bottom: var(--space-1);
+}
+
+.why-us__item h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+.why-us__item p {
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.cta-band {
+  background: var(--deep-water);
+  color: var(--paper);
+  border-radius: var(--radius-md);
+  margin: var(--space-6) auto;
+  max-width: var(--max-width);
+  padding: var(--space-4) var(--space-4);
+}
+
+.cta-band__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  max-width: none;
+  padding: 0;
+}
+
+.cta-band__inner h2 {
+  color: var(--paper);
+  margin-bottom: 0.3rem;
+}
+
+.cta-band__inner p {
+  color: rgba(250, 246, 239, 0.75);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .hero__inner {
+    grid-template-columns: 1fr;
+  }
+  .hero__image {
+    order: -1;
+    transform: none;
+    aspect-ratio: 16 / 10;
+  }
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .why-us__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+  .why-us__grid {
+    grid-template-columns: 1fr;
+  }
+}

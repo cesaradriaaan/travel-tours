@@ -1,0 +1,52 @@
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import "./Gallery.css";
+
+export default function Gallery({ images, alt }) {
+  const [index, setIndex] = useState(0);
+  const hasMultiple = images.length > 1;
+
+  const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
+  const next = () => setIndex((i) => (i + 1) % images.length);
+
+  return (
+    <div className="gallery">
+      <div className="gallery__main">
+        <img src={images[index]} alt={`${alt} — photo ${index + 1}`} />
+        {hasMultiple && (
+          <>
+            <button
+              className="gallery__arrow gallery__arrow--left"
+              onClick={prev}
+              aria-label="Previous photo"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              className="gallery__arrow gallery__arrow--right"
+              onClick={next}
+              aria-label="Next photo"
+            >
+              <ChevronRight size={22} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {hasMultiple && (
+        <div className="gallery__thumbs">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              className={`gallery__thumb ${i === index ? "is-active" : ""}`}
+              onClick={() => setIndex(i)}
+              aria-label={`View photo ${i + 1}`}
+            >
+              <img src={img} alt="" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
