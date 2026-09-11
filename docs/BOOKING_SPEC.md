@@ -26,17 +26,24 @@ so a real backend can be dropped in later (Phase 2) by replacing the
   ]
 }
 
-// TripPlan (itinerary planner state, held in TripContext)
+// TripPlan (itinerary planner state, held in TripContext, persisted to localStorage)
 {
   days: [
     {
       dayNumber: number,
       items: [
-        { tourId: string, title: string, notes?: string }
-      ]
+        { tourId: string, title: string }
+      ],
+      meals: { breakfast: boolean, lunch: boolean, dinner: boolean },
+      accommodation: { name: string, location: string },
+      transportation: string   // "Van" | "Bus" | "Boat" | "Flight" | "Tricycle" | "Other" | ""
     }
   ]
 }
+// A tour can only appear once across the whole trip — adding an
+// already-added tour is blocked; the UI links to its existing day instead.
+// Deleting or reordering a day renumbers all days sequentially (1..N),
+// preserving each day's content.
 // totalPrice is derived, not stored: sum of each item's tour price
 
 // Traveler (booking step 1)

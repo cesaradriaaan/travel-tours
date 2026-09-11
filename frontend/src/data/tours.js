@@ -11,9 +11,9 @@ export const tours = [
     durationDays: 3,
     price: 8500,
     images: [
-      "https://images.pexels.com/photos/31533418/pexels-photo-31533418.jpeg?_gl=1*pojdxg*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDM2MTkkajUxJGwwJGgw",
-      "https://images.pexels.com/photos/38986251/pexels-photo-38986251.jpeg?_gl=1*mhldsb*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5MzY5MDEkbzEkZzEkdDE3ODg5MzcxMTYkajM3JGwwJGgw",
-      "https://images.pexels.com/photos/35646946/pexels-photo-35646946.jpeg?_gl=1*10515a5*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5MzY5MDEkbzEkZzEkdDE3ODg5MzcxNjgkajU0JGwwJGgw",
+      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1200&q=80",
+      "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?w=1200&q=80",
+      "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1200&q=80",
     ],
     summary:
       "Cross lagoons by kayak, snorkel over coral gardens, and island-hop through El Nido's limestone cliffs.",
@@ -37,8 +37,8 @@ export const tours = [
     price: 6200,
     images: [
       "https://i.pinimg.com/1200x/d0/c9/1a/d0c91af0bc467be04ced0aabe291b8c7.jpg",
-      "https://images.pexels.com/photos/9639922/pexels-photo-9639922.jpeg?_gl=1*8sj5t7*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDE3MzEkajQ3JGwwJGgw",
-      "https://images.pexels.com/photos/16654512/pexels-photo-16654512.jpeg?_gl=1*15qnzg7*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDAyNzgkajM2JGwwJGgw",
+      "https://i.pinimg.com/1200x/d0/c9/1a/d0c91af0bc467be04ced0aabe291b8c7.jpg",
+      "https://i.pinimg.com/1200x/d0/c9/1a/d0c91af0bc467be04ced0aabe291b8c7.jpg",
     ],
     summary:
       "Meet tarsiers, cruise the Loboc River, and watch the Chocolate Hills turn gold at sunset.",
@@ -60,9 +60,9 @@ export const tours = [
     durationDays: 4,
     price: 11200,
     images: [
-      "https://images.pexels.com/photos/38370423/pexels-photo-38370423.jpeg?_gl=1*j1msbh*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDE1NjIkajkkbDAkaDA.",
-      "https://plus.unsplash.com/premium_photo-1672510003630-18d2535419ef?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      "https://images.pexels.com/photos/31337963/pexels-photo-31337963.jpeg?_gl=1*1fw2o3u*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDE0NzQkajE0JGwwJGgw",
+      "https://i.pinimg.com/1200x/5b/ce/41/5bce41ab96aca8c8ad88110b3dbfe08b.jpg",
+      "https://i.pinimg.com/1200x/5b/ce/41/5bce41ab96aca8c8ad88110b3dbfe08b.jpg",
+      "https://i.pinimg.com/1200x/5b/ce/41/5bce41ab96aca8c8ad88110b3dbfe08b.jpg",
     ],
     summary:
       "Surf lessons at Cloud 9, island-hop to Naked Island, and swim in Sugba Lagoon's turquoise water.",
@@ -86,9 +86,9 @@ export const tours = [
     durationDays: 3,
     price: 9800,
     images: [
-      "https://images.pexels.com/photos/32091983/pexels-photo-32091983.jpeg?_gl=1*1ka8p4i*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDMxNTMkajU2JGwwJGgw",
-      "https://images.pexels.com/photos/8086901/pexels-photo-8086901.jpeg?_gl=1*9meqwn*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDMwMjgkajYwJGwwJGgw",
-      "https://images.pexels.com/photos/37879531/pexels-photo-37879531.jpeg?_gl=1*1n8n2g1*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDMxNzAkajM5JGwwJGgw",
+      "https://i.pinimg.com/736x/df/61/ee/df61ee310dc961d0a01d3ff19661d73c.jpg",
+      "https://i.pinimg.com/736x/df/61/ee/df61ee310dc961d0a01d3ff19661d73c.jpg",
+      "https://i.pinimg.com/736x/df/61/ee/df61ee310dc961d0a01d3ff19661d73c.jpg",
     ],
     summary:
       "Trek through the UNESCO-listed Batad rice terraces and stay in a traditional Ifugao village.",
@@ -111,9 +111,9 @@ export const tours = [
     durationDays: 2,
     price: 5400,
     images: [
-      "https://images.pexels.com/photos/2532088/pexels-photo-2532088.jpeg?_gl=1*1o4iuuj*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDI3NTAkajQzJGwwJGgw",
-      "https://images.pexels.com/photos/37754801/pexels-photo-37754801.jpeg?_gl=1*3ijw9k*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDI4MjkkajU1JGwwJGgw",
-      "https://images.pexels.com/photos/9871205/pexels-photo-9871205.jpeg?_gl=1*14h0blp*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDI1NDQkajQzJGwwJGgw",
+      "https://i.pinimg.com/736x/91/5b/a6/915ba6db319232b086fe96d8a7078b0b.jpg",
+      "https://i.pinimg.com/736x/91/5b/a6/915ba6db319232b086fe96d8a7078b0b.jpg",
+      "https://i.pinimg.com/736x/91/5b/a6/915ba6db319232b086fe96d8a7078b0b.jpg",
     ],
     summary:
       "Walk the cobblestone streets of Calle Crisologo and ride a kalesa through Spanish-era Vigan.",
@@ -135,9 +135,9 @@ export const tours = [
     durationDays: 3,
     price: 13500,
     images: [
-      "https://images.pexels.com/photos/22041232/pexels-photo-22041232.jpeg?_gl=1*eosgkd*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDMyODYkajEzJGwwJGgw",
-      "https://images.pexels.com/photos/2467670/pexels-photo-2467670.jpeg?_gl=1*1adv0li*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDMzNjckajE3JGwwJGgw",
-      "https://images.pexels.com/photos/13874308/pexels-photo-13874308.jpeg?_gl=1*176yngc*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDQwNzckajkkbDAkaDA.",
+      "https://i.pinimg.com/736x/c2/6b/af/c26bafdb9622d198eac9bee6ec79bfbd.jpg",
+      "https://i.pinimg.com/736x/c2/6b/af/c26bafdb9622d198eac9bee6ec79bfbd.jpg",
+      "https://i.pinimg.com/736x/c2/6b/af/c26bafdb9622d198eac9bee6ec79bfbd.jpg",
     ],
     summary:
       "Dive WWII Japanese shipwrecks and swim in the Philippines' cleanest lake, Kayangan.",

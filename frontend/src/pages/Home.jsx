@@ -12,15 +12,16 @@ export default function Home() {
       <section className="hero">
         <div className="container hero__inner">
           <div className="hero__text">
-            <span className="eyebrow">Explore the Philippines one trip at a time.</span>
+            <span className="eyebrow">Philippines, your way</span>
             <h1>
-              7,641 islands
+              7,641 islands.
               <br />
-              1 trip that will make you wanting for more.
+              One trip that finds your favorites.
             </h1>
             <p>
-              From El Nido's lagoons to Coron's lake, we build
-              itineraries around the islands and heritage towns you actually want to go for.
+              From El Nido's lagoons to Batad's rice terraces, we build
+              itineraries around the islands, dives, and heritage towns
+              you actually want to see — not a fixed package.
             </p>
             <div className="hero__actions">
               <Link to="/tours" className="btn btn-primary">
@@ -33,7 +34,7 @@ export default function Home() {
           </div>
           <div className="hero__image">
             <img
-              src="https://images.pexels.com/photos/2346007/pexels-photo-2346007.jpeg?_gl=1*1oczyuf*_ga*MzMwMjg2NjE0LjE3ODg5MzY5MDI.*_ga_8JE65Q40S6*czE3ODg5Mzk2OTkkbzIkZzEkdDE3ODg5NDMzODAkajQkbDAkaDA."
+              src="https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1000&q=80"
               alt="Limestone cliffs and turquoise lagoon in El Nido, Palawan"
             />
           </div>
@@ -59,7 +60,7 @@ export default function Home() {
 
       <section className="section why-us">
         <div className="container">
-          <span className="eyebrow">Why book with us?</span>
+          <span className="eyebrow">Why book with us</span>
           <h2>Built for how you actually travel</h2>
           <div className="why-us__grid">
             <div className="why-us__item">

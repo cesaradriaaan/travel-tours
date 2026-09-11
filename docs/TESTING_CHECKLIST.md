@@ -55,7 +55,14 @@ Tested and addressed:
 
 ---
 
-## Phase 2 — Tours Listing + Tour Detail (test after this phase — take your time)
+## Phase 2 — Tours Listing + Tour Detail ✅ DONE
+
+QA'd and confirmed working. Minor polish suggestions noted for Phase 5.
+
+<details>
+<summary>Original Phase 2 checklist (for reference)</summary>
+
+## Phase 2 — Tours Listing + Tour Detail (original)
 
 - [ ] `/tours` shows all tours in a grid
 - [ ] Filter controls (region, tags, duration, price) narrow results correctly
@@ -68,17 +75,34 @@ Tested and addressed:
 - [ ] Direct URL to a tour detail page (typed/refreshed) still loads correctly
 - [ ] Invalid tour ID in URL shows the "not found" state gracefully, not a crash
 
+
+</details>
+
 ---
 
-## Phase 3 — Itinerary Planner
+## Phase 3 — Itinerary Planner v2 (test after this — take your time)
+
+Revised based on your Phase 3 QA suggestions. Note: day "reordering" is done
+via drag-and-drop on the grip handle in each day's header; item "moving"
+between days is still a dropdown selector on each item.
 
 - [ ] Adding tours from multiple pages all land in the same trip plan
-- [ ] "Add a day" creates a new day correctly
+- [ ] Refresh the page mid-plan — trip should now persist (saved to browser localStorage), not reset
+- [ ] "Add another day" creates a new day correctly
 - [ ] Removing an item updates the day and running total immediately
-- [ ] Reordering/moving an item between days works without losing data
+- [ ] Moving an item to a different day via its dropdown works without losing data
+- [ ] Try adding the same tour twice — second attempt should be blocked, with a link to its existing day instead of an "Add to Trip" button
+- [ ] Remove a day that has content (tours/meals/accommodation/transport) — should show a confirm prompt before deleting
+- [ ] Delete a middle day (e.g. Day 2 of 4) — remaining days should renumber sequentially (Day 3→2, Day 4→3) with content intact
+- [ ] Drag a day by its grip handle and drop it in a new position — days renumber to match the new order, content preserved
+- [ ] Check Breakfast/Lunch/Dinner boxes on a day — state should stick and reflect in the Preview
+- [ ] Enter a hotel name + location in Accommodation for a day — persists and shows in Preview
+- [ ] Pick a Transportation option for a day — persists and shows in Preview
+- [ ] Click "Duplicate Day" — new day appears right after the original with identical content, correctly renumbered
+- [ ] Click "Preview Itinerary" — modal shows every day's tours, meals, accommodation, transport, and the total price accurately
+- [ ] Close the preview modal (X button and clicking outside it) both work
 - [ ] Running total price recalculates correctly after every change
 - [ ] Empty itinerary shows the friendly empty state with a link to Tours
-- [ ] Refreshing the page — check whether trip state is expected to persist or reset (confirm intended behavior)
 - [ ] "Proceed to Booking" carries the correct trip plan into the booking flow
 
 ---

@@ -8,7 +8,7 @@ import "./TourDetail.css";
 export default function TourDetail() {
   const { id } = useParams();
   const tour = getTourById(id);
-  const { addTourToTrip } = useTrip();
+  const { addTourToTrip, isInTrip, findTourDay } = useTrip();
 
   if (!tour) {
     return (
@@ -19,6 +19,9 @@ export default function TourDetail() {
       </div>
     );
   }
+
+  const alreadyAdded = isInTrip(tour.id);
+  const existingDay = alreadyAdded ? findTourDay(tour.id) : null;
 
   return (
     <div className="tour-detail">
@@ -65,12 +68,21 @@ export default function TourDetail() {
               <div className="booking-card__price">
                 ₱{tour.price.toLocaleString()} <small>/ person</small>
               </div>
-              <button
-                className="btn btn-primary booking-card__btn"
-                onClick={() => addTourToTrip(tour.id)}
-              >
-                Add to Trip
-              </button>
+              {alreadyAdded ? (
+                <Link
+                  to="/plan-trip"
+                  className="btn btn-secondary booking-card__btn"
+                >
+                  Already in Trip — View Day {existingDay}
+                </Link>
+              ) : (
+                <button
+                  className="btn btn-primary booking-card__btn"
+                  onClick={() => addTourToTrip(tour.id)}
+                >
+                  Add to Trip
+                </button>
+              )}
               <Link to="/booking" className="btn btn-secondary booking-card__btn">
                 Book Now
               </Link>
