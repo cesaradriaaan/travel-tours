@@ -1,89 +1,107 @@
 # Booking Spec
 
-## Scope (Phase 1)
+## Scope (Phase 4)
 
-Front-end only. No real payment processor, no real email/backend. The flow
-is fully functional in the UI and produces a mock confirmation, structured
-so a real backend can be dropped in later (Phase 2) by replacing the
-"submit" step with a real API call.
+Front-end booking-request flow only. No real payment processor, availability API,
+email delivery, or backend booking record is created yet. The UI is structured so
+those integrations can replace the mock submit step later without redesigning the
+whole flow.
 
 ## Data Shapes
 
 ```js
-// Tour (from src/data/tours.js)
-{
-  id: string,
-  title: string,
-  region: string,
-  tags: string[],
-  durationDays: number,
-  price: number,          // per person, PHP
-  images: string[],
-  summary: string,
-  highlights: string[],
-  sampleItinerary: [
-    { day: number, title: string, description: string }
-  ]
-}
-
-// TripPlan (itinerary planner state, held in TripContext, persisted to localStorage)
+// TripPlan comes from TripContext and is persisted in localStorage.
 {
   days: [
     {
       dayNumber: number,
-      items: [
-        { tourId: string, title: string }
-      ],
+      items: [{ tourId: string, title: string }],
       meals: { breakfast: boolean, lunch: boolean, dinner: boolean },
       accommodation: { name: string, location: string },
-      transportation: string   // "Van" | "Bus" | "Boat" | "Flight" | "Tricycle" | "Other" | ""
+      transportation: string
     }
   ]
 }
-// A tour can only appear once across the whole trip — adding an
-// already-added tour is blocked; the UI links to its existing day instead.
-// Deleting or reordering a day renumbers all days sequentially (1..N),
-// preserving each day's content.
-// totalPrice is derived, not stored: sum of each item's tour price
 
-// Traveler (booking step 1)
+// Booking draft (persisted while the user is completing Phase 4)
 {
   name: string,
   email: string,
   phone: string,
-  travelers: number   // count of people
+  nationality: string,
+  travelDate: string,      // YYYY-MM-DD
+  adults: number,          // min 1
+  children: number,        // min 0
+  infants: number,         // min 0
+  emergencyName: string,   // optional
+  emergencyPhone: string,  // optional; paired with emergencyName
+  specialRequests: string  // optional, max 600 chars
 }
 
-// Booking (assembled at confirmation)
+// Mock request snapshot assembled at submission
 {
-  reference: string,      // mock generated, e.g. "PHT-83920"
-  traveler: Traveler,
+  reference: string,       // ADV-YYMMDD-XXXX
+  createdAt: string,
+  status: "request-received",
+  traveler: BookingDraft,
   tripPlan: TripPlan,
-  totalPrice: number,
-  status: "confirmed"     // mock — always confirmed in Phase 1
+  pricePerTraveler: number,
+  travelerCount: number,
+  estimatedTotal: number
 }
 ```
 
+## Pricing
+
+`pricePerTraveler` is derived from the itinerary by summing the selected tour
+prices. `travelerCount` is adults + children + infants, and the prototype estimate
+is:
+
+```text
+estimatedTotal = pricePerTraveler × travelerCount
+```
+
+This is explicitly presented as an estimate because final child/infant rates,
+availability, add-ons, and payment terms require a real backend/business rules.
+
 ## Steps
 
-1. **Traveler details** — form with required fields: name, email, phone,
-   travelers (min 1). Validated before allowing "Next".
-2. **Review** — read-only summary of trip plan (all days/items) and total
-   price, plus traveler details with an "Edit" link back to step 1.
-3. **Confirmation** — generates a mock reference number, shows a summary,
-   and a "what happens next" note. Trip plan is cleared from Context after
-   confirmation (fresh start for next visit).
+1. **Traveler details** — lead traveler contact details, preferred travel date,
+   nationality, adults/children/infants, optional emergency contact, and optional
+   special requests. The draft is saved in localStorage so refreshes and trips
+   back to the itinerary do not wipe entered data.
+2. **Review** — read-only traveler summary, complete day-by-day itinerary,
+   meals/accommodation/transportation, and reactive price summary. The user can
+   edit traveler details or return to the itinerary without losing the draft.
+3. **Request received** — generates a branded `ADV-YYMMDD-XXXX` reference,
+   snapshots the itinerary before clearing TripContext, explains next steps, and
+   supports browser Print / Save as PDF. The confirmation snapshot is kept in
+   sessionStorage so refreshing the confirmation page in the same tab is safe.
 
 ## Validation Rules
 
-- Name: required, non-empty
-- Email: required, must match basic email pattern
-- Phone: required, digits/spaces/dashes only, min length 7
-- Travelers: required, integer ≥ 1
+- Lead traveler name: required, non-empty
+- Email: required, basic valid email format
+- Phone: required, phone characters only, minimum 7 characters
+- Preferred travel date: required, today or later
+- Adults: integer >= 1
+- Children / infants: integer >= 0
+- Emergency contact: optional, but name and phone must be provided together
+- Special requests: optional, maximum 600 characters
 
-## Phase 2 Notes (not built now)
+## UX / Safety Rules
 
-- Replace mock reference generation with a real backend booking record
-- Add payment step (Stripe or similar) between Review and Confirmation
-- Send real confirmation email
-- Persist bookings so a user can look them up later (requires auth)
+- `/booking` shows an empty state if the trip has no tours.
+- No payment is collected in Phase 4.
+- Submission is described as a **trip request**, not a guaranteed booking.
+- The itinerary is cleared only after the request snapshot has been created.
+- The booking draft survives refreshes and itinerary edits until submission.
+
+## Future Backend Notes
+
+- Replace mock reference generation with a real booking record ID
+- Add real availability checks before confirmation
+- Add age-based pricing / room / transfer business rules
+- Add payment after quote/availability confirmation
+- Send confirmation email or SMS
+- Persist bookings to an authenticated customer account

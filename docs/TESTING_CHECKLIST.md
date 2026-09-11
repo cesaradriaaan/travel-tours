@@ -107,18 +107,35 @@ between days is still a dropdown selector on each item.
 
 ---
 
-## Phase 4 — Booking Flow
+## Phase 4 — Booking Flow (test after implementation)
 
-- [ ] Step 1 (traveler details) rejects empty required fields
-- [ ] Email field rejects invalid formats (e.g. "test@" )
-- [ ] Phone field validation works as specified
-- [ ] Travelers count can't go below 1
-- [ ] "Next" is disabled until all required fields are valid
-- [ ] Step 2 (review) shows correct trip plan, total price, and traveler details
-- [ ] "Edit" link from review correctly returns to step 1 with data retained
-- [ ] Step 3 (confirmation) shows a generated reference number and summary
-- [ ] Trip plan clears after confirmation (fresh start confirmed)
-- [ ] Refreshing mid-flow doesn't crash the page
+- [ ] Open `/booking` with no tours selected — friendly empty state appears and both navigation buttons work
+- [ ] Add at least one tour, proceed to Booking, and confirm the 3-step progress indicator appears correctly
+- [ ] Leave required traveler fields blank and click “Review Booking” — inline validation blocks progress
+- [ ] Invalid email (e.g. `test@`) is rejected
+- [ ] Invalid/too-short phone number is rejected
+- [ ] Preferred travel date cannot be in the past
+- [ ] Adults cannot go below 1; children and infants cannot go below 0
+- [ ] Total traveler count updates immediately when Adults / Children / Infants change
+- [ ] Estimated total updates as itinerary-per-traveler × total travelers
+- [ ] Enter traveler details, refresh the page, and confirm the draft is retained
+- [ ] Enter traveler details, click “Edit itinerary,” change Phase 3, then return to Booking — traveler draft remains
+- [ ] Emergency contact is optional when both fields are blank
+- [ ] Enter only one emergency-contact field — validation asks for both name and phone
+- [ ] Special requests counter updates and stops at 600 characters
+- [ ] Step 2 shows the correct traveler name, contact details, date, nationality (when provided), and traveler breakdown
+- [ ] Step 2 shows every itinerary day in the current order with tours, meals, accommodation, and transportation
+- [ ] Step 2 price summary matches the traveler count and Phase 3 itinerary price
+- [ ] “Edit” returns to traveler details without clearing data
+- [ ] “Edit itinerary” returns to Phase 3 without clearing the booking draft
+- [ ] “Send Trip Request” creates an `ADV-YYMMDD-XXXX` reference
+- [ ] Confirmation clearly says the request is received, not guaranteed/paid
+- [ ] Confirmation contains a saved itinerary snapshot even though the active trip is cleared
+- [ ] Refresh the confirmation page in the same tab — confirmation remains visible
+- [ ] “Print / Save Summary” opens the browser print dialog and the print layout excludes navigation/action controls
+- [ ] After confirmation, opening Plan a Trip starts with a fresh itinerary
+- [ ] “Plan Another Trip” clears the previous confirmation session and opens a fresh planner
+- [ ] Test Step 1, Step 2, and Confirmation at desktop, tablet, and mobile widths for overlap/overflow
 
 ---
 

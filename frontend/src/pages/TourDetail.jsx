@@ -83,7 +83,13 @@ export default function TourDetail() {
                   Add to Trip
                 </button>
               )}
-              <Link to="/booking" className="btn btn-secondary booking-card__btn">
+              <Link
+                to="/booking"
+                className="btn btn-secondary booking-card__btn"
+                onClick={() => {
+                  if (!alreadyAdded) addTourToTrip(tour.id);
+                }}
+              >
                 Book Now
               </Link>
             </div>
