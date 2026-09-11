@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-Then open the local URL Vite prints (usually `http://localhost:5173`).
+Then open the local URL Vite prints (usually `http://localhost:517_`).
 
 ## Project Structure
 
@@ -20,16 +20,16 @@ Then open the local URL Vite prints (usually `http://localhost:5173`).
 travel-tours/
 ├── docs/           Planning docs (read these first)
 ├── frontend/       React + Vite app (all current code lives here)
-└── backend/        Placeholder for Phase 2 (not built yet)
+└── backend/        Placeholder for Phase 2
 ```
 
 ## Build Status
 
 - [x] **Phase 1 — Foundation**: scaffold, design tokens, Navbar/Footer,
       routing, Home page
-- [ ] **Phase 2** — Tours listing (filters) + Tour Detail (gallery, itinerary)
-- [ ] **Phase 3** — Itinerary Planner (day-by-day builder)
-- [ ] **Phase 4** — Booking flow (3-step)
+- [x] **Phase 2** — Tours listing (filters) + Tour Detail (gallery, itinerary)
+- [x] **Phase 3** — Itinerary Planner (day-by-day builder)
+- [x] **Phase 4** — Booking flow (3-step)
 - [ ] **Phase 5** — About / Contact + polish + accessibility pass
 
 Every route already works and is wired to shared state (`TripContext`),
