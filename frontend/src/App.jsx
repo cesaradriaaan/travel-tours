@@ -9,6 +9,7 @@ import PlanTrip from "./pages/PlanTrip";
 import Booking from "./pages/Booking";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import { checkBackendHealth } from "./services/api";
 
 const pageTitles = {
   "/": "AddyVenture Travel & Tours",
@@ -26,6 +27,7 @@ function RouteEffects() {
     document.title = pathname.startsWith("/tours/")
       ? "Tour Details | AddyVenture"
       : pageTitles[pathname] || "AddyVenture Travel & Tours";
+
     window.scrollTo(0, 0);
   }, [pathname]);
 
@@ -33,11 +35,26 @@ function RouteEffects() {
 }
 
 export default function App() {
+  useEffect(() => {
+    checkBackendHealth()
+      .then((data) => {
+        console.log("Backend connected:", data);
+      })
+      .catch((error) => {
+        console.error("Backend error:", error);
+      });
+  }, []);
+
   return (
     <>
       <RouteEffects />
-      <a className="skip-link" href="#main-content">Skip to main content</a>
+
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
+
       <Navbar />
+
       <main id="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -49,6 +66,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
         </Routes>
       </main>
+
       <Footer />
     </>
   );
