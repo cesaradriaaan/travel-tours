@@ -12,12 +12,62 @@ html {
 
 body {
   margin: 0;
+  min-height: 100vh;
   font-family: var(--font-body);
   font-size: var(--fs-body);
   line-height: 1.65;
   color: var(--ink);
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(circle at 8% 12%, rgba(87, 213, 189, 0.28), transparent 23rem),
+    radial-gradient(circle at 90% 18%, rgba(18, 184, 199, 0.20), transparent 28rem),
+    radial-gradient(circle at 78% 76%, rgba(255, 111, 97, 0.16), transparent 25rem),
+    radial-gradient(circle at 20% 86%, rgba(255, 189, 46, 0.18), transparent 27rem),
+    linear-gradient(135deg, #fffaf1 0%, #fffdf8 42%, #f5fffc 100%);
+  background-size: 135% 135%, 140% 140%, 145% 145%, 135% 135%, 100% 100%;
+  animation: ambientBackground 15s ease-in-out infinite alternate;
   -webkit-font-smoothing: antialiased;
+}
+
+@keyframes ambientBackground {
+  0% {
+    background-position: -6% -4%, 106% 4%, 92% 88%, 6% 104%, 0 0;
+  }
+  50% {
+    background-position: 8% 10%, 88% 18%, 72% 72%, 24% 86%, 0 0;
+  }
+  100% {
+    background-position: 18% 16%, 78% 4%, 86% 64%, 34% 76%, 0 0;
+  }
+}
+
+::selection {
+  background: var(--amber-gold);
+  color: var(--deep-water);
+}
+
+main {
+  position: relative;
+  overflow: clip;
+}
+
+main::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  width: 15rem;
+  height: 15rem;
+  right: -5rem;
+  top: 35vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(18, 184, 199, 0.12), transparent 68%);
+  filter: blur(3px);
+  pointer-events: none;
+  animation: floatingAura 9s ease-in-out infinite alternate;
+}
+
+@keyframes floatingAura {
+  to { transform: translate(-3rem, 7rem) scale(1.25); }
 }
 
 h1,
@@ -26,20 +76,14 @@ h3,
 h4 {
   font-family: var(--font-display);
   color: var(--deep-water);
-  line-height: 1.15;
+  line-height: 1.12;
   margin: 0 0 var(--space-2);
-  font-weight: 600;
+  font-weight: 650;
 }
 
-h1 {
-  font-size: var(--fs-h1);
-}
-h2 {
-  font-size: var(--fs-h2);
-}
-h3 {
-  font-size: var(--fs-h3);
-}
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
 
 p {
   margin: 0 0 var(--space-2);
@@ -68,14 +112,28 @@ button {
   cursor: pointer;
 }
 
-/* Focus visibility for accessibility */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 9999;
+  transform: translateY(-180%);
+  background: var(--deep-water);
+  color: var(--paper);
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--amber-gold-dark);
-  outline-offset: 2px;
+  outline: 3px solid var(--amber-gold);
+  outline-offset: 3px;
 }
 
 .container {
@@ -87,65 +145,316 @@ select:focus-visible {
 
 .section {
   padding: var(--space-6) 0;
+  position: relative;
 }
 
 .eyebrow {
-  color: var(--coral-tide);
-  font-weight: 600;
+  color: var(--coral-deep);
+  font-weight: 800;
   font-size: var(--fs-small);
   margin-bottom: var(--space-1);
-  display: inline-block;
-}
-
-/* Buttons */
-.btn {
   display: inline-flex;
   align-items: center;
+  gap: 0.55rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--coral-tide), var(--amber-gold));
+  box-shadow: 0 0 0 0 rgba(255, 111, 97, 0.38);
+  animation: eyebrowPulse 2.1s ease-out infinite;
+}
+
+@keyframes eyebrowPulse {
+  0%, 32% { box-shadow: 0 0 0 0 rgba(255, 111, 97, 0.38); transform: scale(1); }
+  65% { box-shadow: 0 0 0 9px rgba(255, 111, 97, 0); transform: scale(1.18); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 111, 97, 0); transform: scale(1); }
+}
+
+/* Buttons — intentionally more tactile and animated */
+.btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.6rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
+  padding: 0.92rem 1.7rem;
+  border-radius: 999px;
+  font-weight: 800;
   font-size: 0.95rem;
   border: 1.5px solid transparent;
-  transition: background-color 0.2s var(--ease), color 0.2s var(--ease),
-    border-color 0.2s var(--ease), transform 0.15s var(--ease);
+  box-shadow: 0 8px 20px rgba(7, 59, 76, 0.10);
+  transition: transform 0.26s var(--ease-bounce), box-shadow 0.28s var(--ease),
+    color 0.25s var(--ease), border-color 0.25s var(--ease), background 0.35s var(--ease);
+}
+
+.btn::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background: radial-gradient(circle at 50% 130%, rgba(255,255,255,0.6), transparent 45%);
+  transform: translateY(45%);
+  transition: transform 0.35s var(--ease);
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: -4px auto -4px -45%;
+  z-index: -1;
+  width: 34%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.62), transparent);
+  transition: left 0.58s var(--ease);
 }
 
 .btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-5px) scale(1.035);
+  box-shadow: 0 16px 34px rgba(7, 59, 76, 0.20);
 }
 
+.btn:hover::before { transform: translateY(0); }
+.btn:hover::after { left: 120%; }
+.btn:active { transform: translateY(-1px) scale(0.97); }
+
 .btn-primary {
-  background: var(--amber-gold);
+  background: linear-gradient(115deg, var(--amber-gold) 0%, #ffd35b 50%, var(--coral-tide) 120%);
+  background-size: 180% 180%;
   color: var(--deep-water);
+  border-color: rgba(255,255,255,0.34);
 }
+
 .btn-primary:hover {
-  background: var(--amber-gold-dark);
+  background-position: 100% 50%;
+  box-shadow: 0 16px 36px rgba(255, 176, 38, 0.36), 0 8px 20px rgba(7, 59, 76, 0.14);
 }
 
 .btn-secondary {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.78);
   color: var(--deep-water);
-  border-color: var(--deep-water);
+  border-color: rgba(7, 59, 76, 0.28);
+  backdrop-filter: blur(10px);
 }
+
 .btn-secondary:hover {
-  background: var(--deep-water);
+  background: linear-gradient(135deg, var(--deep-water), var(--deep-water-soft));
+  border-color: var(--deep-water);
   color: var(--white);
+  box-shadow: var(--shadow-lagoon);
 }
 
 .btn-on-dark {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.09);
   color: var(--paper);
-  border-color: var(--paper);
-}
-.btn-on-dark:hover {
-  background: var(--paper);
-  color: var(--deep-water);
+  border-color: rgba(255,255,255,0.72);
+  backdrop-filter: blur(8px);
 }
 
-/* Responsive helpers */
-@media (max-width: 640px) {
-  .section {
-    padding: var(--space-5) 0;
+.btn-on-dark:hover {
+  background: linear-gradient(135deg, var(--amber-gold), #ffd66d);
+  border-color: var(--amber-gold);
+  color: var(--deep-water);
+  box-shadow: var(--shadow-glow);
+}
+
+input, textarea, select {
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease),
+    background-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+input:hover, textarea:hover, select:hover {
+  border-color: rgba(18, 184, 199, 0.62);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--lagoon);
+  box-shadow: 0 0 0 4px rgba(18, 184, 199, 0.16);
+  transform: translateY(-1px);
+}
+
+/* Visible motion as sections enter the viewport on supported browsers */
+@supports (animation-timeline: view()) {
+  .section > .container,
+  .tours-page > .container,
+  .about-story__grid,
+  .contact-main__grid {
+    animation: sectionReveal linear both;
+    animation-timeline: view();
+    animation-range: entry 5% cover 25%;
   }
+
+  @keyframes sectionReveal {
+    from { opacity: 0.35; transform: translateY(28px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+@media (max-width: 640px) {
+  .section { padding: var(--space-5) 0; }
+  .btn { padding: 0.86rem 1.35rem; }
+}
+
+/* Performance balance pass: keep the site lively without constant repaints. */
+body {
+  animation: none;
+  background-attachment: scroll;
+}
+
+body::before {
+  animation: none;
+  filter: none;
+  opacity: 0.65;
+}
+
+.eyebrow::before {
+  animation: none;
+}
+
+@supports (animation-timeline: view()) {
+  section,
+  .section {
+    animation: none;
+  }
+}
+
+.btn,
+.card,
+input,
+select,
+textarea {
+  will-change: auto;
+}
+
+.glass,
+.surface-glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* High-refresh smoothness pass
+   Keep native scrolling cheap: no scroll-linked transforms, no fixed animated aura,
+   and no backdrop blur on common controls. */
+html {
+  scroll-behavior: auto;
+}
+
+main::before {
+  display: none;
+  animation: none !important;
+  filter: none !important;
+}
+
+/* The earlier reveal effect is tied to scroll position and can force extra work on
+   every frame. Keep sections fully visible and let the browser scroll natively. */
+@supports (animation-timeline: view()) {
+  .section > .container,
+  .tours-page > .container,
+  .about-story__grid,
+  .contact-main__grid {
+    animation: none !important;
+    animation-timeline: auto !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.btn-secondary,
+.btn-on-dark {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Skip painting large off-screen sections until they approach the viewport.
+   Chromium/Edge support this and it noticeably reduces long-page scroll work. */
+@supports (content-visibility: auto) {
+  .section,
+  .featured-section,
+  .why-us {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
+  }
+}
+
+
+/* =========================================================
+   PERFORMANCE-FIRST MODE
+   Keep color and hover feedback, remove continuous/repaint-heavy effects.
+   ========================================================= */
+body {
+  animation: none !important;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(87, 213, 189, 0.16), transparent 22rem),
+    radial-gradient(circle at 88% 14%, rgba(18, 184, 199, 0.12), transparent 25rem),
+    linear-gradient(135deg, #fffaf1 0%, #fffdf8 48%, #f5fffc 100%);
+  background-size: auto;
+}
+
+main::before { display: none !important; }
+
+.eyebrow::before {
+  animation: none !important;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Keep buttons responsive, but remove shimmer/blur and exaggerated scaling. */
+.btn::before,
+.btn::after { display: none !important; }
+
+.btn {
+  transition: transform 160ms ease, box-shadow 160ms ease,
+    color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(7, 59, 76, 0.14);
+  }
+}
+
+.btn:active { transform: translateY(0); }
+
+.btn-secondary,
+.btn-on-dark,
+.glass,
+.surface-glass {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Painting deferred sections can introduce a hitch exactly as they enter the
+   viewport. Render normally for steadier high-refresh scrolling. */
+@supports (content-visibility: auto) {
+  .section,
+  .featured-section,
+  .why-us {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
+}
+
+/* =========================================================
+   CONTRAST + SPACING PASS
+   Slightly deeper page canvas so white content cards read as layers.
+   Static only: no new continuous animations or blur effects.
+   ========================================================= */
+body {
+  background-color: #e8f0ed;
+  background-image:
+    radial-gradient(circle at 12% 7%, rgba(87, 213, 189, 0.10), transparent 24rem),
+    radial-gradient(circle at 90% 18%, rgba(18, 184, 199, 0.08), transparent 28rem),
+    linear-gradient(145deg, #edf3f0 0%, #e8efec 50%, #f1eee6 100%);
+}
+
+main {
+  background: linear-gradient(180deg, rgba(232, 240, 237, 0.72) 0%, rgba(239, 242, 235, 0.88) 100%);
 }

@@ -125,6 +125,8 @@ export default function PlanTrip() {
                               src={tour.images[0]}
                               alt=""
                               className="trip-item__thumb"
+                              loading="lazy"
+                              decoding="async"
                             />
                           )}
                           <div className="trip-item__info">

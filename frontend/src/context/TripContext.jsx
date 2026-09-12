@@ -4,6 +4,24 @@ import { getTourById } from "../data/tours";
 const TripContext = createContext(null);
 
 const STORAGE_KEY = "addyventure-trip-plan";
+const SESSION_KEY = "addyventure-trip-session-v1";
+
+function createSessionId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `trip-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function loadTripSessionId() {
+  try {
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (saved) return saved;
+    const created = createSessionId();
+    localStorage.setItem(SESSION_KEY, created);
+    return created;
+  } catch {
+    return createSessionId();
+  }
+}
 
 function makeDay(dayNumber, overrides = {}) {
   return {
@@ -50,6 +68,7 @@ function renumber(days) {
 
 export function TripProvider({ children }) {
   const [tripPlan, setTripPlan] = useState(loadInitialPlan);
+  const [tripSessionId, setTripSessionId] = useState(loadTripSessionId);
 
   useEffect(() => {
     try {
@@ -58,6 +77,14 @@ export function TripProvider({ children }) {
       // localStorage unavailable (private browsing, etc.) — trip just won't persist
     }
   }, [tripPlan]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SESSION_KEY, tripSessionId);
+    } catch {
+      // Session identity is only used to keep booking drafts tied to the right trip.
+    }
+  }, [tripSessionId]);
 
   const isInTrip = (tourId) =>
     tripPlan.days.some((d) => d.items.some((item) => item.tourId === tourId));
@@ -194,7 +221,10 @@ export function TripProvider({ children }) {
     }));
   };
 
-  const clearTrip = () => setTripPlan(emptyPlan);
+  const clearTrip = () => {
+    setTripPlan(emptyPlan);
+    setTripSessionId(createSessionId());
+  };
 
   const totalItems = useMemo(
     () => tripPlan.days.reduce((sum, d) => sum + d.items.length, 0),
@@ -215,6 +245,7 @@ export function TripProvider({ children }) {
 
   const value = {
     tripPlan,
+    tripSessionId,
     addTourToTrip,
     removeItem,
     moveItem,

@@ -49,22 +49,37 @@ function loadJson(storage, key, fallback) {
   }
 }
 
-function loadTraveler() {
-  const raw = loadJson(localStorage, DRAFT_KEY, null);
-  if (!raw) return emptyTraveler;
+function normalizeTraveler(raw) {
   return {
     ...emptyTraveler,
-    ...raw,
-    adults: Math.max(1, Number(raw.adults) || 1),
-    children: Math.max(0, Number(raw.children) || 0),
-    infants: Math.max(0, Number(raw.infants) || 0),
+    ...(raw || {}),
+    adults: Math.max(1, Number(raw?.adults) || 1),
+    children: Math.max(0, Number(raw?.children) || 0),
+    infants: Math.max(0, Number(raw?.infants) || 0),
   };
 }
 
-function loadStep() {
+function loadTraveler(tripSessionId) {
+  const raw = loadJson(localStorage, DRAFT_KEY, null);
+  if (!raw) return emptyTraveler;
+
+  // Current draft format: only restore a booking date when it belongs to this exact trip.
+  if (raw.traveler) {
+    return raw.tripSessionId === tripSessionId ? normalizeTraveler(raw.traveler) : emptyTraveler;
+  }
+
+  // Legacy drafts had no trip identity, so their saved date could leak into a brand-new
+  // one-day booking and look as if the system chose it. Keep the convenience fields,
+  // but force the traveler to choose a fresh start date once.
+  return normalizeTraveler({ ...raw, travelDate: "" });
+}
+
+function loadStep(tripSessionId) {
   try {
-    const saved = Number(localStorage.getItem(STEP_KEY));
-    return saved === 2 ? 2 : 1;
+    const raw = localStorage.getItem(STEP_KEY);
+    if (!raw) return 1;
+    const saved = JSON.parse(raw);
+    return saved?.tripSessionId === tripSessionId && saved?.step === 2 ? 2 : 1;
   } catch {
     return 1;
   }
@@ -272,9 +287,9 @@ function StepIndicator({ step }) {
 }
 
 export default function Booking() {
-  const { tripPlan, totalItems, totalPrice, clearTrip } = useTrip();
-  const [traveler, setTraveler] = useState(loadTraveler);
-  const [step, setStep] = useState(loadStep);
+  const { tripPlan, tripSessionId, totalItems, totalPrice, clearTrip } = useTrip();
+  const [traveler, setTraveler] = useState(() => loadTraveler(tripSessionId));
+  const [step, setStep] = useState(() => loadStep(tripSessionId));
   const [errors, setErrors] = useState({});
   const [confirmation, setConfirmation] = useState(loadConfirmation);
   const [copiedReference, setCopiedReference] = useState(false);
@@ -287,22 +302,26 @@ export default function Booking() {
   const displayConfirmation = confirmation && totalItems === 0;
 
   useEffect(() => {
+    if (step >= 3 || totalItems === 0) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(traveler));
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ tripSessionId, traveler })
+      );
     } catch {
       // Draft persistence is a convenience; the booking still works without it.
     }
-  }, [traveler]);
+  }, [traveler, tripSessionId, step, totalItems]);
 
   useEffect(() => {
     if (step < 3) {
       try {
-        localStorage.setItem(STEP_KEY, String(step));
+        localStorage.setItem(STEP_KEY, JSON.stringify({ tripSessionId, step }));
       } catch {
         // Ignore storage failures.
       }
     }
-  }, [step]);
+  }, [step, tripSessionId]);
 
   useEffect(() => {
     if (!displayConfirmation) return undefined;

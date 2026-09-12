@@ -1,6 +1,19 @@
 .tours-page {
+  position: relative;
   padding: var(--space-5) 0 var(--space-6);
 }
+
+.tours-page::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 24rem; height: 24rem;
+  right: -9rem; top: 2rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(143,191,174,0.12), transparent 70%);
+  animation: toursAmbient 12s ease-in-out infinite alternate;
+}
+@keyframes toursAmbient { to { transform: translate(-5rem, 8rem) scale(1.12); } }
 
 .tours-page p {
   margin-bottom: var(--space-2);
@@ -36,4 +49,53 @@
   .tours-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Vibrant UI pass */
+.tours-page {
+  min-height: 70vh;
+  background:
+    radial-gradient(circle at 96% 5%, rgba(18,184,199,0.18), transparent 24rem),
+    radial-gradient(circle at 4% 65%, rgba(255,189,46,0.13), transparent 22rem);
+}
+
+.tours-page::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 16rem;
+  height: 16rem;
+  left: 5%;
+  top: 17rem;
+  border-radius: 42% 58% 65% 35%;
+  background: linear-gradient(135deg, rgba(255,111,97,0.09), rgba(87,213,189,0.10));
+  animation: toursBlob 8s ease-in-out infinite alternate;
+}
+
+@keyframes toursBlob {
+  to { transform: translate(5rem,4rem) rotate(30deg) scale(1.2); border-radius: 65% 35% 40% 60%; }
+}
+
+/* Performance balance */
+.tours-page::before,
+.tours-page::after,
+.tours-hero::before,
+.tours-hero::after {
+  animation: none;
+}
+
+/* Final page spacing + surface contrast */
+.container.tours-page {
+  padding-top: var(--space-5);
+  padding-bottom: clamp(3rem, 5vw, 4.75rem);
+}
+
+.tours-grid {
+  margin-bottom: 0;
+}
+
+.tours-empty {
+  background: #fffdfa;
+  border-color: rgba(7, 59, 76, 0.18);
+  box-shadow: 0 10px 26px rgba(7, 59, 76, 0.09);
 }

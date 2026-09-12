@@ -1142,3 +1142,92 @@
     border-bottom: 0;
   }
 }
+
+/* Vibrant UI pass */
+.booking {
+  position: relative;
+}
+
+.booking::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 24rem;
+  height: 24rem;
+  right: -10rem;
+  top: 8rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,189,46,0.16), transparent 68%);
+  animation: bookingAura 8s ease-in-out infinite alternate;
+}
+
+@keyframes bookingAura { to { transform: translate(-5rem,8rem) scale(1.25); } }
+
+.booking-step.is-active > span {
+  background: linear-gradient(135deg, var(--deep-water), var(--lagoon-deep));
+  box-shadow: 0 0 0 5px rgba(18,184,199,0.12), 0 8px 18px rgba(7,59,76,0.12);
+}
+
+.booking-step.is-done > span {
+  background: linear-gradient(135deg, var(--seafoam), #8ce8d6);
+}
+
+.booking .booking-card,
+.booking-price-card,
+.booking-reference {
+  border-color: rgba(18,184,199,0.13);
+  background: rgba(255,255,255,0.90);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 34px rgba(7,59,76,0.08);
+  transition: transform 0.26s var(--ease), box-shadow 0.26s var(--ease), border-color 0.26s var(--ease);
+}
+
+.booking .booking-card:hover,
+.booking-price-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(18,184,199,0.30);
+  box-shadow: 0 20px 42px rgba(7,59,76,0.12);
+}
+
+.booking-heading__seal {
+  background: linear-gradient(135deg, rgba(87,213,189,0.24), rgba(255,189,46,0.16));
+  border-color: rgba(18,184,199,0.18);
+}
+
+/* Performance balance */
+.booking-page::before,
+.booking-page::after,
+.booking-shell::before,
+.booking-shell::after {
+  animation: none;
+}
+
+.booking-page * {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.booking::before { animation: none; }
+
+/* Card contrast pass */
+.booking .booking-card,
+.booking-price-card,
+.booking-reference {
+  background: #fffdfa;
+  border-color: rgba(7, 59, 76, 0.15);
+  box-shadow: 0 10px 28px rgba(7, 59, 76, 0.10);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Booking → footer breathing room
+   `.container` is loaded globally after this page stylesheet, so use the
+   combined selector to preserve vertical page padding reliably. */
+.container.booking {
+  padding: var(--space-5) var(--space-3) 3.25rem;
+}
+
+@media (max-width: 680px) {
+  .container.booking {
+    padding: var(--space-4) var(--space-3) 2.5rem;
+  }
+}

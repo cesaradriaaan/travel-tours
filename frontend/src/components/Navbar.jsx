@@ -24,7 +24,7 @@ export default function Navbar() {
           <span>AddyVenture Travel & Tours</span>
         </NavLink>
 
-        <nav className={`navbar__links ${open ? "is-open" : ""}`}>
+        <nav aria-label="Primary navigation" className={`navbar__links ${open ? "is-open" : ""}`}>
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -42,7 +42,7 @@ export default function Navbar() {
             </NavLink>
           ))}
           <NavLink to="/booking" className="btn btn-primary navbar__cta" onClick={() => setOpen(false)}>
-            Book Your Next Trip Now!
+            Book Your Trip
           </NavLink>
         </nav>
 

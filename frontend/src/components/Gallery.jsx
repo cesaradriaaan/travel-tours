@@ -12,7 +12,7 @@ export default function Gallery({ images, alt }) {
   return (
     <div className="gallery">
       <div className="gallery__main">
-        <img src={images[index]} alt={`${alt} — photo ${index + 1}`} />
+        <img src={images[index]} alt={`${alt} — photo ${index + 1}`} decoding="async" />
         {hasMultiple && (
           <>
             <button
@@ -42,7 +42,7 @@ export default function Gallery({ images, alt }) {
               onClick={() => setIndex(i)}
               aria-label={`View photo ${i + 1}`}
             >
-              <img src={img} alt="" />
+              <img src={img} alt="" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

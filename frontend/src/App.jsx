@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -9,11 +10,35 @@ import Booking from "./pages/Booking";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 
+const pageTitles = {
+  "/": "AddyVenture Travel & Tours",
+  "/tours": "Tours | AddyVenture",
+  "/plan-trip": "Plan a Trip | AddyVenture",
+  "/booking": "Booking | AddyVenture",
+  "/about": "About | AddyVenture",
+  "/contact": "Contact | AddyVenture",
+};
+
+function RouteEffects() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    document.title = pathname.startsWith("/tours/")
+      ? "Tour Details | AddyVenture"
+      : pageTitles[pathname] || "AddyVenture Travel & Tours";
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <>
+      <RouteEffects />
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <Navbar />
-      <main>
+      <main id="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tours" element={<Tours />} />

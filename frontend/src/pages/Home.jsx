@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ShieldCheck, MapPinned, Route, Compass } from "lucide-react";
 import TourCard from "../components/TourCard";
@@ -5,8 +6,27 @@ import { tours } from "../data/tours";
 import "./Home.css";
 
 const featured = tours.slice(0, 3);
+const marqueePlaces = ["Palawan", "Siargao", "Bohol", "Banaue", "Vigan", "Coron"];
+const heroSlides = tours.slice(0, 5).map((tour) => ({
+  src: tour.images[0],
+  label: tour.region,
+  title: tour.title,
+}));
 
 export default function Home() {
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion || heroSlides.length < 2) return undefined;
+
+    const timer = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <>
       <section className="hero">
@@ -16,7 +36,7 @@ export default function Home() {
             <h1>
               7,641 islands.
               <br />
-              One trip that finds your favorites.
+              <span className="hero__highlight">One trip that finds your favorites.</span>
             </h1>
             <p>
               From El Nido's lagoons to Batad's rice terraces, we build
@@ -32,16 +52,51 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <div className="hero__image">
-            <img
-              src="https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1000&q=80"
-              alt="Limestone cliffs and turquoise lagoon in El Nido, Palawan"
-            />
+
+          <div className="hero__visual">
+            <span className="hero__orbit hero__orbit--one" aria-hidden="true" />
+            <span className="hero__orbit hero__orbit--two" aria-hidden="true" />
+            <div className="hero__image hero__slideshow">
+              {heroSlides.map((slide, index) => (
+                <img
+                  key={slide.title}
+                  className={`hero__slide ${index === activeSlide ? "hero__slide--active" : ""}`}
+                  src={slide.src}
+                  alt={index === activeSlide ? slide.title : ""}
+                  aria-hidden={index !== activeSlide}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={index === 0 ? "high" : "auto"}
+                />
+              ))}
+            </div>
+            <div className="hero__float hero__float--one" aria-hidden="true">
+              <MapPinned size={18} />
+              <span>Island hopping</span>
+            </div>
+            <div className="hero__float hero__float--two" aria-hidden="true">
+              <Route size={18} />
+              <span>Custom routes</span>
+            </div>
+            <div className="hero__float hero__float--three" aria-hidden="true">
+              <Compass size={18} />
+              <span>Your pace</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="section">
+      <div className="travel-marquee" aria-hidden="true">
+        <div className="travel-marquee__track">
+          {Array.from({ length: 6 }, () => marqueePlaces).flat().map((place, index) => (
+            <span key={`${place}-${index}`}>
+              {place}<b>✦</b>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <section className="section featured-section">
         <div className="container">
           <span className="eyebrow">Featured tours</span>
           <h2>Where travelers are headed this season</h2>
