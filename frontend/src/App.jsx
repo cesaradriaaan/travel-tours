@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import RequireAdmin from "./components/RequireAdmin";
 
 import Home from "./pages/Home";
 import Tours from "./pages/Tours";
@@ -11,6 +12,9 @@ import PlanTrip from "./pages/PlanTrip";
 import Booking from "./pages/Booking";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 import AdminBookings from "./pages/AdminBookings";
 import AdminMessages from "./pages/AdminMessages";
@@ -24,6 +28,8 @@ const pageTitles = {
   "/booking": "Booking | AddyVenture",
   "/about": "About | AddyVenture",
   "/contact": "Contact | AddyVenture",
+  "/login": "Login | AddyVenture",
+  "/register": "Create Account | AddyVenture",
   "/admin/bookings": "Admin Bookings | AddyVenture",
   "/admin/messages": "Admin Messages | AddyVenture",
 };
@@ -34,8 +40,7 @@ function RouteEffects() {
   useEffect(() => {
     document.title = pathname.startsWith("/tours/")
       ? "Tour Details | AddyVenture"
-      : pageTitles[pathname] ||
-        "AddyVenture Travel & Tours";
+      : pageTitles[pathname] || "AddyVenture Travel & Tours";
 
     window.scrollTo(0, 0);
   }, [pathname]);
@@ -68,32 +73,31 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tours" element={<Tours />} />
-          <Route
-            path="/tours/:id"
-            element={<TourDetail />}
-          />
-          <Route
-            path="/plan-trip"
-            element={<PlanTrip />}
-          />
-          <Route
-            path="/booking"
-            element={<Booking />}
-          />
+          <Route path="/tours/:id" element={<TourDetail />} />
+          <Route path="/plan-trip" element={<PlanTrip />} />
+          <Route path="/booking" element={<Booking />} />
           <Route path="/about" element={<About />} />
-          <Route
-            path="/contact"
-            element={<Contact />}
-          />
+          <Route path="/contact" element={<Contact />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           <Route
             path="/admin/bookings"
-            element={<AdminBookings />}
+            element={
+              <RequireAdmin>
+                <AdminBookings />
+              </RequireAdmin>
+            }
           />
 
           <Route
             path="/admin/messages"
-            element={<AdminMessages />}
+            element={
+              <RequireAdmin>
+                <AdminMessages />
+              </RequireAdmin>
+            }
           />
         </Routes>
       </main>
