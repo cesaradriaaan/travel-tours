@@ -22,6 +22,7 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabaseClient";
+import { redeemVoucher } from "../services/api";
 
 import ConfirmModal from "../components/ConfirmModal";
 
@@ -29,11 +30,8 @@ import "./Account.css";
 
 
 export default function Account() {
-  const navigate =
-    useNavigate();
-
-  const fileInputRef =
-    useRef(null);
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   const {
     user,
@@ -42,12 +40,8 @@ export default function Account() {
     signOut,
   } = useAuth();
 
-  const [
-    avatarUrl,
-    setAvatarUrl,
-  ] = useState(
-    profile?.avatar_url || ""
-  );
+  const [avatarUrl, setAvatarUrl] =
+    useState(profile?.avatar_url || "");
 
   const [
     uploadingAvatar,
@@ -158,9 +152,7 @@ export default function Account() {
         error
       );
     } finally {
-      setLoadingVouchers(
-        false
-      );
+      setLoadingVouchers(false);
     }
   }
 
@@ -218,70 +210,55 @@ export default function Account() {
         `${user.id}/avatar.${extension}`;
 
       const {
-        error:
-          uploadError,
-      } =
-        await supabase
-          .storage
-          .from(
-            "avatars"
-          )
-          .upload(
-            filePath,
-            file,
-            {
-              upsert: true,
-              contentType:
-                file.type,
-            }
-          );
+        error: uploadError,
+      } = await supabase
+        .storage
+        .from("avatars")
+        .upload(
+          filePath,
+          file,
+          {
+            upsert: true,
+            contentType:
+              file.type,
+          }
+        );
 
-      if (
-        uploadError
-      ) {
+      if (uploadError) {
         throw uploadError;
       }
 
       const {
         data:
           publicUrlData,
-      } =
-        supabase
-          .storage
-          .from(
-            "avatars"
-          )
-          .getPublicUrl(
-            filePath
-          );
+      } = supabase
+        .storage
+        .from("avatars")
+        .getPublicUrl(
+          filePath
+        );
 
       const newAvatarUrl =
         `${publicUrlData.publicUrl}?v=${Date.now()}`;
 
       const {
-        error:
-          profileError,
-      } =
-        await supabase
-          .from(
-            "profiles"
-          )
-          .update({
-            avatar_url:
-              newAvatarUrl,
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url:
+            newAvatarUrl,
 
-            updated_at:
-              new Date()
-                .toISOString(),
-          })
-          .eq(
-            "id",
-            user.id
-          );
+          updated_at:
+            new Date()
+              .toISOString(),
+        })
+        .eq(
+          "id",
+          user.id
+        );
 
-      if (
-        profileError
-      ) {
+      if (profileError) {
         throw profileError;
       }
 
@@ -299,9 +276,7 @@ export default function Account() {
           "Unable to upload profile picture."
       );
     } finally {
-      setUploadingAvatar(
-        false
-      );
+      setUploadingAvatar(false);
 
       if (
         fileInputRef.current
@@ -318,12 +293,26 @@ export default function Account() {
   ) {
     event.preventDefault();
 
+    if (redeeming) {
+      return;
+    }
+
     const code =
-      voucherCode.trim();
+      voucherCode
+        .trim()
+        .toUpperCase();
 
     if (!code) {
       setVoucherError(
         "Enter a voucher code."
+      );
+
+      return;
+    }
+
+    if (code.length > 50) {
+      setVoucherError(
+        "Voucher code is too long."
       );
 
       return;
@@ -334,24 +323,12 @@ export default function Account() {
       setVoucherError("");
       setVoucherMessage("");
 
-      const {
-        data,
-        error,
-      } =
-        await supabase.rpc(
-          "redeem_voucher",
-          {
-            p_code: code,
-          }
+      const data =
+        await redeemVoucher(
+          code
         );
 
-      if (error) {
-        throw error;
-      }
-
-      if (
-        !data?.success
-      ) {
+      if (!data?.success) {
         setVoucherError(
           data?.message ||
             "Unable to redeem voucher."
@@ -370,7 +347,7 @@ export default function Account() {
       await loadVouchers();
     } catch (error) {
       setVoucherError(
-        error.message ||
+        error?.message ||
           "Unable to redeem voucher."
       );
     } finally {
@@ -615,8 +592,7 @@ export default function Account() {
             <section className="account-card">
               <div>
                 <span className="eyebrow">
-                  AddyVenture
-                  Rewards
+                  AddyVenture Rewards
                 </span>
 
                 <h2>
@@ -654,6 +630,7 @@ export default function Account() {
                   value={
                     voucherCode
                   }
+                  maxLength={50}
                   onChange={(
                     event
                   ) => {
@@ -672,6 +649,9 @@ export default function Account() {
                   }}
                   placeholder="Enter voucher code"
                   autoComplete="off"
+                  disabled={
+                    redeeming
+                  }
                 />
 
                 <button

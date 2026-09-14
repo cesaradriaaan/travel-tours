@@ -2,6 +2,16 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const { Resend } = require("resend");
+
+const rateLimitPackage = require(
+  "express-rate-limit"
+);
+
+const rateLimit =
+  rateLimitPackage.rateLimit ||
+  rateLimitPackage.default ||
+  rateLimitPackage;
+
 require("dotenv").config();
 
 const supabase = require("./supabase");
@@ -12,8 +22,245 @@ const resend = new Resend(
   process.env.RESEND_API_KEY
 );
 
+
+// =====================================================
+// BASIC APP SECURITY / REQUEST LIMITS
+// =====================================================
+
+app.disable("x-powered-by");
+
 app.use(cors());
-app.use(express.json());
+
+
+// =====================================================
+// RATE LIMIT HELPERS
+// =====================================================
+
+function rateLimitResponse(
+  message
+) {
+  return {
+    success: false,
+    message,
+  };
+}
+
+
+// -----------------------------------------------------
+// GLOBAL API LIMIT
+//
+// Backup protection for all /api routes.
+// Endpoint-specific limits below are much stricter.
+// -----------------------------------------------------
+
+const apiLimiter = rateLimit({
+  windowMs:
+    15 * 60 * 1000,
+
+  limit:
+    600,
+
+  standardHeaders:
+    "draft-7",
+
+  legacyHeaders:
+    false,
+
+  handler:
+    (req, res) => {
+      return res.status(429).json(
+        rateLimitResponse(
+          "Too many requests. Please wait a few minutes and try again."
+        )
+      );
+    },
+});
+
+
+// -----------------------------------------------------
+// PUBLIC CONTACT FORM
+//
+// Protects database from spam/bots.
+// -----------------------------------------------------
+
+const contactLimiter = rateLimit({
+  windowMs:
+    15 * 60 * 1000,
+
+  limit:
+    5,
+
+  standardHeaders:
+    "draft-7",
+
+  legacyHeaders:
+    false,
+
+  handler:
+    (req, res) => {
+      return res.status(429).json(
+        rateLimitResponse(
+          "Too many contact form submissions. Please wait before sending another message."
+        )
+      );
+    },
+});
+
+
+// -----------------------------------------------------
+// CLIENT BOOKING CREATION
+//
+// Keyed by authenticated user instead of IP.
+// -----------------------------------------------------
+
+const bookingCreationLimiter =
+  rateLimit({
+    windowMs:
+      60 * 60 * 1000,
+
+    limit:
+      5,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      (req, res) => {
+        return res.status(429).json(
+          rateLimitResponse(
+            "You have created too many booking requests. Please wait before trying again."
+          )
+        );
+      },
+  });
+
+
+// -----------------------------------------------------
+// CANCELLATION REQUEST
+// -----------------------------------------------------
+
+const cancellationRequestLimiter =
+  rateLimit({
+    windowMs:
+      60 * 60 * 1000,
+
+    limit:
+      5,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      (req, res) => {
+        return res.status(429).json(
+          rateLimitResponse(
+            "Too many cancellation attempts. Please wait before trying again."
+          )
+        );
+      },
+  });
+
+
+// -----------------------------------------------------
+// ADMIN MUTATIONS
+//
+// Status changes / cancellation decisions.
+// -----------------------------------------------------
+
+const adminMutationLimiter =
+  rateLimit({
+    windowMs:
+      60 * 60 * 1000,
+
+    limit:
+      120,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      (req, res) => {
+        return res.status(429).json(
+          rateLimitResponse(
+            "Too many administrative actions. Please wait before continuing."
+          )
+        );
+      },
+  });
+
+
+// -----------------------------------------------------
+// ADMIN EMAIL REPLIES
+//
+// Important because this triggers Resend API usage.
+// -----------------------------------------------------
+
+const adminEmailLimiter =
+  rateLimit({
+    windowMs:
+      60 * 60 * 1000,
+
+    limit:
+      20,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      (req, res) => {
+        return res.status(429).json(
+          rateLimitResponse(
+            "Email sending limit reached. Please wait before sending more replies."
+          )
+        );
+      },
+  });
+
+
+// Global protection BEFORE request body parsing.
+app.use(
+  "/api",
+  apiLimiter
+);
+
+
+// Maximum JSON request size.
+//
+// Stops huge request bodies from consuming unnecessary
+// memory / database resources.
+app.use(
+  express.json({
+    limit: "100kb",
+  })
+);
 
 
 // =====================================================
@@ -35,13 +282,11 @@ async function requireAuth(
         "Bearer "
       )
     ) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message:
-            "Authentication required.",
-        });
+      return res.status(401).json({
+        success: false,
+        message:
+          "Authentication required.",
+      });
     }
 
     const accessToken =
@@ -58,14 +303,15 @@ async function requireAuth(
         accessToken
       );
 
-    if (error || !user) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message:
-            "Your session is invalid or has expired. Please log in again.",
-        });
+    if (
+      error ||
+      !user
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Your session is invalid or has expired. Please log in again.",
+      });
     }
 
     req.user = user;
@@ -77,13 +323,11 @@ async function requireAuth(
       error
     );
 
-    return res
-      .status(401)
-      .json({
-        success: false,
-        message:
-          "Unable to verify authentication.",
-      });
+    return res.status(401).json({
+      success: false,
+      message:
+        "Unable to verify authentication.",
+    });
   }
 }
 
@@ -103,13 +347,11 @@ async function requireAdmin(
         "Bearer "
       )
     ) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message:
-            "Authentication required.",
-        });
+      return res.status(401).json({
+        success: false,
+        message:
+          "Authentication required.",
+      });
     }
 
     const accessToken =
@@ -130,41 +372,37 @@ async function requireAdmin(
       authError ||
       !user
     ) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message:
-            "Your session is invalid or has expired. Please log in again.",
-        });
+      return res.status(401).json({
+        success: false,
+        message:
+          "Your session is invalid or has expired. Please log in again.",
+      });
     }
 
     const {
       data: profile,
       error: profileError,
-    } = await supabase
-      .from("profiles")
-      .select(
-        "id, role"
-      )
-      .eq(
-        "id",
-        user.id
-      )
-      .single();
+    } =
+      await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq(
+          "id",
+          user.id
+        )
+        .single();
 
     if (
       profileError ||
       !profile ||
-      profile.role !== "admin"
+      profile.role !==
+        "admin"
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message:
-            "Administrator access is required.",
-        });
+      return res.status(403).json({
+        success: false,
+        message:
+          "Administrator access is required.",
+      });
     }
 
     req.user = user;
@@ -177,13 +415,11 @@ async function requireAdmin(
       error
     );
 
-    return res
-      .status(403)
-      .json({
-        success: false,
-        message:
-          "Unable to verify administrator access.",
-      });
+    return res.status(403).json({
+      success: false,
+      message:
+        "Unable to verify administrator access.",
+    });
   }
 }
 
@@ -474,7 +710,8 @@ function calculateVoucherDiscount(
     return 0;
   }
 
-  let discount = 0;
+  let discount =
+    0;
 
   if (
     voucher.discount_type ===
@@ -546,25 +783,20 @@ app.get(
 
 
 // =====================================================
-// ADMIN BOOKING READ ROUTES
-// Phase 8 will lock these to admin only.
+// ADMIN — BOOKINGS
 // =====================================================
 
 app.get(
   "/api/bookings",
-  async (
-    req,
-    res
-  ) => {
+  requireAdmin,
+  async (req, res) => {
     try {
       const {
         data,
         error,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .select("*")
           .order(
             "created_at",
@@ -580,39 +812,35 @@ app.get(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to retrieve bookings.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to retrieve bookings.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
-          count:
-            data.length,
-          bookings:
-            data.map(
-              formatBooking
-            ),
-        });
+      return res.status(200).json({
+        success: true,
+
+        count:
+          data.length,
+
+        bookings:
+          data.map(
+            formatBooking
+          ),
+      });
     } catch (error) {
       console.error(
         "Get bookings error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while retrieving bookings.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while retrieving bookings.",
+      });
     }
   }
 );
@@ -620,10 +848,8 @@ app.get(
 
 app.get(
   "/api/bookings/:id",
-  async (
-    req,
-    res
-  ) => {
+  requireAdmin,
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -633,9 +859,7 @@ app.get(
         error,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .select("*")
           .eq(
             "id",
@@ -647,53 +871,44 @@ app.get(
         error ||
         !data
       ) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Booking not found.",
-          });
+        return res.status(404).json({
+          success: false,
+          message:
+            "Booking not found.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
-          booking:
-            formatBooking(
-              data
-            ),
-        });
+      return res.status(200).json({
+        success: true,
+        booking:
+          formatBooking(
+            data
+          ),
+      });
     } catch (error) {
       console.error(
         "Get booking error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Unable to retrieve booking.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to retrieve booking.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// CLIENT VOUCHERS
+// CLIENT — VOUCHERS
 // =====================================================
 
 app.get(
   "/api/my-vouchers",
   requireAuth,
-  async (
-    req,
-    res
-  ) => {
+  async (req, res) => {
     try {
       const {
         data,
@@ -740,59 +955,54 @@ app.get(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to retrieve your vouchers.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to retrieve your vouchers.",
+        });
       }
 
       const vouchers =
-        (
-          data || []
-        ).map(
+        (data || []).map(
           formatUserVoucher
         );
 
-      return res
-        .status(200)
-        .json({
-          success: true,
-          count:
-            vouchers.length,
-          vouchers,
-        });
+      return res.status(200).json({
+        success: true,
+
+        count:
+          vouchers.length,
+
+        vouchers,
+      });
     } catch (error) {
       console.error(
         "Get vouchers error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while retrieving your vouchers.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while retrieving your vouchers.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// CREATE BOOKING
+// CLIENT — CREATE BOOKING
 // =====================================================
 
 app.post(
   "/api/bookings",
+
   requireAuth,
-  async (
-    req,
-    res
-  ) => {
+
+  bookingCreationLimiter,
+
+  async (req, res) => {
     try {
       const bookingData =
         req.body;
@@ -803,13 +1013,11 @@ app.post(
         !bookingData.phone ||
         !bookingData.travelDate
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Traveler name, email, phone, and travel date are required.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Traveler name, email, phone, and travel date are required.",
+        });
       }
 
       const pricePerTraveler =
@@ -834,13 +1042,11 @@ app.post(
         travelerCount <
           1
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Invalid booking price or traveler count.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid booking price or traveler count.",
+        });
       }
 
       const subtotal =
@@ -915,13 +1121,11 @@ app.post(
           !walletVoucher ||
           !walletVoucher.voucher
         ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message:
-                "This voucher is unavailable or has already been used.",
-            });
+          return res.status(400).json({
+            success: false,
+            message:
+              "This voucher is unavailable or has already been used.",
+          });
         }
 
         userVoucher =
@@ -933,13 +1137,11 @@ app.post(
         if (
           !selectedVoucher.active
         ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message:
-                "This voucher is no longer active.",
-            });
+          return res.status(400).json({
+            success: false,
+            message:
+              "This voucher is no longer active.",
+          });
         }
 
         const now =
@@ -949,32 +1151,26 @@ app.post(
           selectedVoucher.valid_from &&
           new Date(
             selectedVoucher.valid_from
-          ) >
-            now
+          ) > now
         ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message:
-                "This voucher is not active yet.",
-            });
+          return res.status(400).json({
+            success: false,
+            message:
+              "This voucher is not active yet.",
+          });
         }
 
         if (
           selectedVoucher.valid_until &&
           new Date(
             selectedVoucher.valid_until
-          ) <
-            now
+          ) < now
         ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message:
-                "This voucher has expired.",
-            });
+          return res.status(400).json({
+            success: false,
+            message:
+              "This voucher has expired.",
+          });
         }
 
         const minimumSpend =
@@ -987,13 +1183,11 @@ app.post(
           subtotal <
           minimumSpend
         ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              message:
-                `This voucher requires a minimum booking subtotal of ₱${minimumSpend.toLocaleString()}.`,
-            });
+          return res.status(400).json({
+            success: false,
+            message:
+              `This voucher requires a minimum booking subtotal of ₱${minimumSpend.toLocaleString()}.`,
+          });
         }
 
         discountAmount =
@@ -1023,9 +1217,7 @@ app.post(
         error,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .insert([
             {
               user_id:
@@ -1101,13 +1293,11 @@ app.post(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to save booking.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to save booking.",
+        });
       }
 
       if (
@@ -1130,7 +1320,8 @@ app.post(
                 "used",
 
               used_at:
-                new Date().toISOString(),
+                new Date()
+                  .toISOString(),
 
               booking_id:
                 data.id,
@@ -1164,9 +1355,7 @@ app.post(
               rollbackError,
           } =
             await supabase
-              .from(
-                "bookings"
-              )
+              .from("bookings")
               .delete()
               .eq(
                 "id",
@@ -1182,101 +1371,92 @@ app.post(
             );
           }
 
-          return res
-            .status(409)
-            .json({
-              success: false,
-              message:
-                "The voucher could not be applied. Please try again.",
-            });
+          return res.status(409).json({
+            success: false,
+            message:
+              "The voucher could not be applied. Please try again.",
+          });
         }
       }
 
-      return res
-        .status(201)
-        .json({
-          success: true,
+      return res.status(201).json({
+        success: true,
 
-          message:
-            "Booking request received!",
+        message:
+          "Booking request received!",
 
-          booking: {
-            id:
-              data.id,
+        booking: {
+          id:
+            data.id,
 
-            userId:
-              data.user_id,
+          userId:
+            data.user_id,
 
-            bookingReference:
-              data.booking_reference,
+          bookingReference:
+            data.booking_reference,
 
-            status:
-              data.status,
+          status:
+            data.status,
 
-            subtotal:
-              Number(
-                data.subtotal
-              ),
+          subtotal:
+            Number(
+              data.subtotal
+            ),
 
-            discountAmount:
-              Number(
-                data.discount_amount ||
-                  0
-              ),
+          discountAmount:
+            Number(
+              data.discount_amount ||
+                0
+            ),
 
-            estimatedTotal:
-              Number(
-                data.estimated_total
-              ),
+          estimatedTotal:
+            Number(
+              data.estimated_total
+            ),
 
-            voucherId:
-              data.voucher_id,
+          voucherId:
+            data.voucher_id,
 
-            voucherCode:
-              data.voucher_code,
+          voucherCode:
+            data.voucher_code,
 
-            createdAt:
-              data.created_at,
-          },
-        });
+          createdAt:
+            data.created_at,
+        },
+      });
     } catch (error) {
       console.error(
         "Booking error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while creating the booking.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while creating the booking.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// MY BOOKINGS
+// CLIENT — MY BOOKINGS
 // =====================================================
 
 app.get(
   "/api/my-bookings",
+
   requireAuth,
-  async (
-    req,
-    res
-  ) => {
+
+  async (req, res) => {
     try {
       const {
         data,
         error,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .select("*")
           .eq(
             "user_id",
@@ -1296,41 +1476,35 @@ app.get(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to retrieve your bookings.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to retrieve your bookings.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          count:
-            data.length,
+        count:
+          data.length,
 
-          bookings:
-            data.map(
-              formatBooking
-            ),
-        });
+        bookings:
+          data.map(
+            formatBooking
+          ),
+      });
     } catch (error) {
       console.error(
         "Get my bookings error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while retrieving your bookings.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while retrieving your bookings.",
+      });
     }
   }
 );
@@ -1338,11 +1512,10 @@ app.get(
 
 app.get(
   "/api/my-bookings/:id",
+
   requireAuth,
-  async (
-    req,
-    res
-  ) => {
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -1352,9 +1525,7 @@ app.get(
         error,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .select("*")
           .eq(
             "id",
@@ -1370,54 +1541,49 @@ app.get(
         error ||
         !data
       ) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Booking not found or you do not have access to it.",
-          });
+        return res.status(404).json({
+          success: false,
+          message:
+            "Booking not found or you do not have access to it.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          booking:
-            formatBooking(
-              data
-            ),
-        });
+        booking:
+          formatBooking(
+            data
+          ),
+      });
     } catch (error) {
       console.error(
         "Get my booking error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Unable to retrieve your booking.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to retrieve your booking.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// CLIENT CANCELLATION REQUEST
+// CLIENT — CANCELLATION REQUEST
 // =====================================================
 
 app.post(
   "/api/my-bookings/:id/cancellation-request",
+
   requireAuth,
-  async (
-    req,
-    res
-  ) => {
+
+  cancellationRequestLimiter,
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -1432,13 +1598,11 @@ app.post(
         reason.length >
         1000
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Cancellation reason must be 1000 characters or less.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Cancellation reason must be 1000 characters or less.",
+        });
       }
 
       const {
@@ -1449,9 +1613,7 @@ app.post(
           bookingError,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .select("*")
           .eq(
             "id",
@@ -1467,39 +1629,33 @@ app.post(
         bookingError ||
         !booking
       ) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Booking not found or you do not have access to it.",
-          });
+        return res.status(404).json({
+          success: false,
+          message:
+            "Booking not found or you do not have access to it.",
+        });
       }
 
       if (
         booking.status ===
         "Cancellation Requested"
       ) {
-        return res
-          .status(409)
-          .json({
-            success: false,
-            message:
-              "A cancellation request is already pending admin approval.",
-          });
+        return res.status(409).json({
+          success: false,
+          message:
+            "A cancellation request is already pending admin approval.",
+        });
       }
 
       if (
         booking.status ===
         "Cancelled"
       ) {
-        return res
-          .status(409)
-          .json({
-            success: false,
-            message:
-              "This booking is already cancelled.",
-          });
+        return res.status(409).json({
+          success: false,
+          message:
+            "This booking is already cancelled.",
+        });
       }
 
       const cancellableStatuses =
@@ -1514,13 +1670,11 @@ app.post(
           booking.status
         )
       ) {
-        return res
-          .status(409)
-          .json({
-            success: false,
-            message:
-              "This booking cannot be cancelled from its current status.",
-          });
+        return res.status(409).json({
+          success: false,
+          message:
+            "This booking cannot be cancelled from its current status.",
+        });
       }
 
       const {
@@ -1531,9 +1685,7 @@ app.post(
           updateError,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .update({
             status:
               "Cancellation Requested",
@@ -1546,7 +1698,8 @@ app.post(
               null,
 
             cancellation_requested_at:
-              new Date().toISOString(),
+              new Date()
+                .toISOString(),
 
             cancellation_resolved_at:
               null,
@@ -1574,57 +1727,52 @@ app.post(
           updateError
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to submit your cancellation request.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to submit your cancellation request.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          message:
-            "Cancellation request submitted for admin approval.",
+        message:
+          "Cancellation request submitted for admin approval.",
 
-          booking:
-            formatBooking(
-              updatedBooking
-            ),
-        });
+        booking:
+          formatBooking(
+            updatedBooking
+          ),
+      });
     } catch (error) {
       console.error(
         "Request cancellation error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while requesting cancellation.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while requesting cancellation.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// ADMIN CANCELLATION APPROVAL / REJECTION
+// ADMIN — CANCELLATION RESOLUTION
 // =====================================================
 
 app.post(
   "/api/bookings/:id/cancellation-resolution",
+
   requireAdmin,
-  async (
-    req,
-    res
-  ) => {
+
+  adminMutationLimiter,
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -1643,13 +1791,11 @@ app.post(
         decision !==
           "reject"
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              'Decision must be "approve" or "reject".',
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            'Decision must be "approve" or "reject".',
+        });
       }
 
       const {
@@ -1660,9 +1806,7 @@ app.post(
           bookingError,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .select("*")
           .eq(
             "id",
@@ -1674,34 +1818,32 @@ app.post(
         bookingError ||
         !booking
       ) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Booking not found.",
-          });
+        return res.status(404).json({
+          success: false,
+          message:
+            "Booking not found.",
+        });
       }
 
       if (
         booking.status !==
         "Cancellation Requested"
       ) {
-        return res
-          .status(409)
-          .json({
-            success: false,
-            message:
-              "This booking does not have a pending cancellation request.",
-          });
+        return res.status(409).json({
+          success: false,
+          message:
+            "This booking does not have a pending cancellation request.",
+        });
       }
 
       const resolvedAt =
-        new Date().toISOString();
+        new Date()
+          .toISOString();
 
-      // -----------------------------
-      // REJECT
-      // -----------------------------
+
+      // ===============================================
+      // REJECT CANCELLATION
+      // ===============================================
 
       if (
         decision ===
@@ -1729,9 +1871,7 @@ app.post(
             rejectError,
         } =
           await supabase
-            .from(
-              "bookings"
-            )
+            .from("bookings")
             .update({
               status:
                 restoredStatus,
@@ -1758,36 +1898,33 @@ app.post(
             rejectError
           );
 
-          return res
-            .status(500)
-            .json({
-              success: false,
-              message:
-                "Unable to reject the cancellation request.",
-            });
+          return res.status(500).json({
+            success: false,
+            message:
+              "Unable to reject the cancellation request.",
+          });
         }
 
-        return res
-          .status(200)
-          .json({
-            success: true,
+        return res.status(200).json({
+          success: true,
 
-            message:
-              "Cancellation request rejected. The booking remains active.",
+          message:
+            "Cancellation request rejected. The booking remains active.",
 
-            voucherRestored:
-              false,
+          voucherRestored:
+            false,
 
-            booking:
-              formatBooking(
-                rejectedBooking
-              ),
-          });
+          booking:
+            formatBooking(
+              rejectedBooking
+            ),
+        });
       }
 
-      // -----------------------------
-      // APPROVE
-      // -----------------------------
+
+      // ===============================================
+      // APPROVE CANCELLATION
+      // ===============================================
 
       const {
         data:
@@ -1797,9 +1934,7 @@ app.post(
           cancelError,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .update({
             status:
               "Cancelled",
@@ -1826,13 +1961,11 @@ app.post(
           cancelError
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to approve the cancellation request.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to approve the cancellation request.",
+        });
       }
 
       let voucherRestored =
@@ -1841,8 +1974,6 @@ app.post(
       let voucherRestorationMessage =
         null;
 
-      // Restore used voucher only if
-      // it is still active and valid.
       if (
         booking.voucher_id &&
         booking.user_id
@@ -1855,17 +1986,13 @@ app.post(
             voucherError,
         } =
           await supabase
-            .from(
-              "vouchers"
-            )
-            .select(
-              `
-                id,
-                active,
-                valid_from,
-                valid_until
-              `
-            )
+            .from("vouchers")
+            .select(`
+              id,
+              active,
+              valid_from,
+              valid_until
+            `)
             .eq(
               "id",
               booking.voucher_id
@@ -1892,15 +2019,13 @@ app.post(
             !voucher.valid_from ||
             new Date(
               voucher.valid_from
-            ) <=
-              now;
+            ) <= now;
 
           const hasNotExpired =
             !voucher.valid_until ||
             new Date(
               voucher.valid_until
-            ) >=
-              now;
+            ) >= now;
 
           const voucherStillValid =
             voucher.active &&
@@ -1976,51 +2101,49 @@ app.post(
         }
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          message:
-            "Cancellation approved. The booking is now cancelled.",
+        message:
+          "Cancellation approved. The booking is now cancelled.",
 
-          voucherRestored,
+        voucherRestored,
 
-          voucherRestorationMessage,
+        voucherRestorationMessage,
 
-          booking:
-            formatBooking(
-              cancelledBooking
-            ),
-        });
+        booking:
+          formatBooking(
+            cancelledBooking
+          ),
+      });
     } catch (error) {
       console.error(
         "Resolve cancellation error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while resolving the cancellation request.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while resolving the cancellation request.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// UPDATE BOOKING STATUS
+// ADMIN — UPDATE BOOKING STATUS
 // =====================================================
 
 app.patch(
   "/api/bookings/:id",
-  async (
-    req,
-    res
-  ) => {
+
+  requireAdmin,
+
+  adminMutationLimiter,
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -2041,13 +2164,11 @@ app.patch(
           status
         )
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Invalid booking status.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid booking status.",
+        });
       }
 
       const {
@@ -2055,9 +2176,7 @@ app.patch(
         error,
       } =
         await supabase
-          .from(
-            "bookings"
-          )
+          .from("bookings")
           .update({
             status,
           })
@@ -2074,56 +2193,50 @@ app.patch(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to update booking.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to update booking.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          message:
-            "Booking status updated!",
+        message:
+          "Booking status updated!",
 
-          booking:
-            formatBooking(
-              data
-            ),
-        });
+        booking:
+          formatBooking(
+            data
+          ),
+      });
     } catch (error) {
       console.error(
         "Update booking error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while updating booking.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while updating booking.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// CONTACT
+// PUBLIC — CONTACT FORM
 // =====================================================
 
 app.post(
   "/api/contact",
-  async (
-    req,
-    res
-  ) => {
+
+  contactLimiter,
+
+  async (req, res) => {
     try {
       const {
         name,
@@ -2139,13 +2252,28 @@ app.post(
         !subject ||
         !message
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Name, email, subject, and message are required.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Name, email, subject, and message are required.",
+        });
+      }
+
+      if (
+        String(name).length >
+          120 ||
+        String(email).length >
+          254 ||
+        String(subject).length >
+          200 ||
+        String(message).length >
+          5000
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "One or more contact form fields are too long.",
+        });
       }
 
       const {
@@ -2175,52 +2303,50 @@ app.post(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to send message.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to send message.",
+        });
       }
 
-      return res
-        .status(201)
-        .json({
-          success: true,
+      return res.status(201).json({
+        success: true,
 
-          message:
-            "Message sent successfully!",
+        message:
+          "Message sent successfully!",
 
-          contact:
-            formatContactMessage(
-              data
-            ),
-        });
+        contact:
+          formatContactMessage(
+            data
+          ),
+      });
     } catch (error) {
       console.error(
         "Contact error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while sending the message.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while sending the message.",
+      });
     }
   }
 );
 
 
+// =====================================================
+// ADMIN — CONTACT MESSAGES
+// =====================================================
+
 app.get(
   "/api/contact-messages",
-  async (
-    req,
-    res
-  ) => {
+
+  requireAdmin,
+
+  async (req, res) => {
     try {
       const {
         data,
@@ -2245,41 +2371,35 @@ app.get(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to retrieve contact messages.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to retrieve contact messages.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          count:
-            data.length,
+        count:
+          data.length,
 
-          messages:
-            data.map(
-              formatContactMessage
-            ),
-        });
+        messages:
+          data.map(
+            formatContactMessage
+          ),
+      });
     } catch (error) {
       console.error(
         "Get contact messages error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while retrieving messages.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while retrieving messages.",
+      });
     }
   }
 );
@@ -2287,10 +2407,10 @@ app.get(
 
 app.get(
   "/api/contact-messages/:id",
-  async (
-    req,
-    res
-  ) => {
+
+  requireAdmin,
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -2314,15 +2434,14 @@ app.get(
           .single();
 
       if (
-        contactError
+        contactError ||
+        !contact
       ) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Contact message not found.",
-          });
+        return res.status(404).json({
+          success: false,
+          message:
+            "Contact message not found.",
+        });
       }
 
       const {
@@ -2357,43 +2476,37 @@ app.get(
           repliesError
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to retrieve reply history.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to retrieve reply history.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          message:
-            formatContactMessage(
-              contact
-            ),
+        message:
+          formatContactMessage(
+            contact
+          ),
 
-          replies:
-            replies.map(
-              formatContactReply
-            ),
-        });
+        replies:
+          replies.map(
+            formatContactReply
+          ),
+      });
     } catch (error) {
       console.error(
         "Get contact message error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Unable to retrieve contact message.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to retrieve contact message.",
+      });
     }
   }
 );
@@ -2401,10 +2514,12 @@ app.get(
 
 app.patch(
   "/api/contact-messages/:id",
-  async (
-    req,
-    res
-  ) => {
+
+  requireAdmin,
+
+  adminMutationLimiter,
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -2424,13 +2539,11 @@ app.patch(
           status
         )
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Invalid message status.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid message status.",
+        });
       }
 
       const {
@@ -2457,56 +2570,52 @@ app.patch(
           error
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to update message status.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to update message status.",
+        });
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          message:
-            "Message status updated!",
+        message:
+          "Message status updated!",
 
-          contact:
-            formatContactMessage(
-              data
-            ),
-        });
+        contact:
+          formatContactMessage(
+            data
+          ),
+      });
     } catch (error) {
       console.error(
         "Update contact message error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while updating message.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while updating message.",
+      });
     }
   }
 );
 
 
 // =====================================================
-// SEND ADMIN REPLY
+// ADMIN — SEND CONTACT REPLY
 // =====================================================
 
 app.post(
   "/api/contact-messages/:id/reply",
-  async (
-    req,
-    res
-  ) => {
+
+  requireAdmin,
+
+  adminEmailLimiter,
+
+  async (req, res) => {
     try {
       const { id } =
         req.params;
@@ -2522,13 +2631,22 @@ app.post(
           .length <
           2
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Reply message is required.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Reply message is required.",
+        });
+      }
+
+      if (
+        replyMessage.length >
+        10000
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Reply message is too long.",
+        });
       }
 
       const {
@@ -2553,13 +2671,11 @@ app.post(
         contactError ||
         !contact
       ) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Contact message not found.",
-          });
+        return res.status(404).json({
+          success: false,
+          message:
+            "Contact message not found.",
+        });
       }
 
       const {
@@ -2569,24 +2685,22 @@ app.post(
         error:
           emailError,
       } =
-        await resend
-          .emails
-          .send({
-            from:
-              process
-                .env
-                .RESEND_FROM_EMAIL,
+        await resend.emails.send({
+          from:
+            process
+              .env
+              .RESEND_FROM_EMAIL,
 
-            to: [
-              contact.email,
-            ],
+          to: [
+            contact.email,
+          ],
 
-            subject:
-              `Re: ${contact.subject}`,
+          subject:
+            `Re: ${contact.subject}`,
 
-            text:
-              replyMessage.trim(),
-          });
+          text:
+            replyMessage.trim(),
+        });
 
       if (
         emailError
@@ -2596,13 +2710,11 @@ app.post(
           emailError
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Unable to send reply email.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to send reply email.",
+        });
       }
 
       const {
@@ -2643,13 +2755,11 @@ app.post(
           replyError
         );
 
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Email was sent, but the reply could not be saved.",
-          });
+        return res.status(500).json({
+          success: false,
+          message:
+            "Email was sent, but the reply could not be saved.",
+        });
       }
 
       const {
@@ -2678,32 +2788,28 @@ app.post(
         );
       }
 
-      return res
-        .status(200)
-        .json({
-          success: true,
+      return res.status(200).json({
+        success: true,
 
-          message:
-            "Reply sent successfully!",
+        message:
+          "Reply sent successfully!",
 
-          reply:
-            formatContactReply(
-              savedReply
-            ),
-        });
+        reply:
+          formatContactReply(
+            savedReply
+          ),
+      });
     } catch (error) {
       console.error(
         "Send reply error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Something went wrong while sending the reply.",
-        });
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while sending the reply.",
+      });
     }
   }
 );

@@ -4,11 +4,15 @@ const API_URL =
   import.meta.env.VITE_API_URL;
 
 
-// Get current user's access token
+// =====================================================
+// AUTH
+// =====================================================
+
 async function getAccessToken() {
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } =
+    await supabase.auth.getSession();
 
   if (!session?.access_token) {
     throw new Error(
@@ -20,15 +24,36 @@ async function getAccessToken() {
 }
 
 
-// Check backend
-export async function checkBackendHealth() {
-  const response = await fetch(
-    `${API_URL}/api/health`
-  );
+// =====================================================
+// RESPONSE HELPER
+// =====================================================
 
-  if (!response.ok) {
+async function readJsonResponse(
+  response
+) {
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+  if (
+    !contentType.includes(
+      "application/json"
+    )
+  ) {
+    const text =
+      await response.text();
+
+    console.error(
+      "Unexpected API response:",
+      text.slice(
+        0,
+        300
+      )
+    );
+
     throw new Error(
-      "Backend connection failed"
+      "The server returned an unexpected response."
     );
   }
 
@@ -36,34 +61,85 @@ export async function checkBackendHealth() {
 }
 
 
-// Create booking
-export async function createBooking(
-  bookingData
+async function authenticatedFetch(
+  url,
+  options = {}
 ) {
   const accessToken =
     await getAccessToken();
 
-  const response = await fetch(
-    `${API_URL}/api/bookings`,
+  return fetch(
+    url,
     {
-      method: "POST",
+      ...options,
 
       headers: {
-        "Content-Type":
-          "application/json",
+        ...(options.headers ||
+          {}),
 
         Authorization:
           `Bearer ${accessToken}`,
       },
-
-      body: JSON.stringify(
-        bookingData
-      ),
     }
   );
+}
+
+
+// =====================================================
+// HEALTH
+// =====================================================
+
+export async function checkBackendHealth() {
+  const response =
+    await fetch(
+      `${API_URL}/api/health`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Backend connection failed"
+    );
+  }
+
+  return data;
+}
+
+
+// =====================================================
+// CLIENT — BOOKINGS
+// =====================================================
+
+export async function createBooking(
+  bookingData
+) {
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/bookings`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body:
+          JSON.stringify(
+            bookingData
+          ),
+      }
+    );
+
+  const data =
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -76,52 +152,16 @@ export async function createBooking(
 }
 
 
-// Get logged-in user's vouchers
-export async function getMyVouchers() {
-  const accessToken =
-    await getAccessToken();
-
-  const response = await fetch(
-    `${API_URL}/api/my-vouchers`,
-    {
-      headers: {
-        Authorization:
-          `Bearer ${accessToken}`,
-      },
-    }
-  );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load your vouchers"
-    );
-  }
-
-  return data;
-}
-
-
-// Get logged-in user's bookings
 export async function getMyBookings() {
-  const accessToken =
-    await getAccessToken();
-
-  const response = await fetch(
-    `${API_URL}/api/my-bookings`,
-    {
-      headers: {
-        Authorization:
-          `Bearer ${accessToken}`,
-      },
-    }
-  );
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/my-bookings`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -134,25 +174,18 @@ export async function getMyBookings() {
 }
 
 
-// Get one logged-in user's booking
 export async function getMyBookingById(
   id
 ) {
-  const accessToken =
-    await getAccessToken();
-
-  const response = await fetch(
-    `${API_URL}/api/my-bookings/${id}`,
-    {
-      headers: {
-        Authorization:
-          `Bearer ${accessToken}`,
-      },
-    }
-  );
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/my-bookings/${id}`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -165,35 +198,32 @@ export async function getMyBookingById(
 }
 
 
-// Request cancellation for user's own booking
 export async function requestBookingCancellation(
   id,
   reason = ""
 ) {
-  const accessToken =
-    await getAccessToken();
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/my-bookings/${id}/cancellation-request`,
+      {
+        method: "POST",
 
-  const response = await fetch(
-    `${API_URL}/api/my-bookings/${id}/cancellation-request`,
-    {
-      method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      headers: {
-        "Content-Type":
-          "application/json",
-
-        Authorization:
-          `Bearer ${accessToken}`,
-      },
-
-      body: JSON.stringify({
-        reason,
-      }),
-    }
-  );
+        body:
+          JSON.stringify({
+            reason,
+          }),
+      }
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -206,14 +236,83 @@ export async function requestBookingCancellation(
 }
 
 
-// Get all bookings
-export async function getBookings() {
-  const response = await fetch(
-    `${API_URL}/api/bookings`
-  );
+// =====================================================
+// CLIENT — VOUCHERS
+// =====================================================
+
+export async function getMyVouchers() {
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/my-vouchers`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to load your vouchers"
+    );
+  }
+
+  return data;
+}
+
+
+export async function redeemVoucher(
+  code
+) {
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/redeem-voucher`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body:
+          JSON.stringify({
+            code,
+          }),
+      }
+    );
+
+  const data =
+    await readJsonResponse(
+      response
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to redeem voucher"
+    );
+  }
+
+  return data;
+}
+
+
+// =====================================================
+// ADMIN — BOOKINGS
+// =====================================================
+
+export async function getBookings() {
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/bookings`
+    );
+
+  const data =
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -226,16 +325,18 @@ export async function getBookings() {
 }
 
 
-// Get one booking
 export async function getBookingById(
   id
 ) {
-  const response = await fetch(
-    `${API_URL}/api/bookings/${id}`
-  );
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/bookings/${id}`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -248,29 +349,32 @@ export async function getBookingById(
 }
 
 
-// Update booking status
 export async function updateBookingStatus(
   id,
   status
 ) {
-  const response = await fetch(
-    `${API_URL}/api/bookings/${id}`,
-    {
-      method: "PATCH",
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/bookings/${id}`,
+      {
+        method: "PATCH",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      body: JSON.stringify({
-        status,
-      }),
-    }
-  );
+        body:
+          JSON.stringify({
+            status,
+          }),
+      }
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -283,35 +387,32 @@ export async function updateBookingStatus(
 }
 
 
-// Admin approve/reject cancellation request
 export async function resolveBookingCancellation(
   id,
   decision
 ) {
-  const accessToken =
-    await getAccessToken();
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/bookings/${id}/cancellation-resolution`,
+      {
+        method: "POST",
 
-  const response = await fetch(
-    `${API_URL}/api/bookings/${id}/cancellation-resolution`,
-    {
-      method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      headers: {
-        "Content-Type":
-          "application/json",
-
-        Authorization:
-          `Bearer ${accessToken}`,
-      },
-
-      body: JSON.stringify({
-        decision,
-      }),
-    }
-  );
+        body:
+          JSON.stringify({
+            decision,
+          }),
+      }
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -324,28 +425,35 @@ export async function resolveBookingCancellation(
 }
 
 
-// Send contact message
+// =====================================================
+// PUBLIC — CONTACT
+// =====================================================
+
 export async function sendContactMessage(
   contactData
 ) {
-  const response = await fetch(
-    `${API_URL}/api/contact`,
-    {
-      method: "POST",
+  const response =
+    await fetch(
+      `${API_URL}/api/contact`,
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      body: JSON.stringify(
-        contactData
-      ),
-    }
-  );
+        body:
+          JSON.stringify(
+            contactData
+          ),
+      }
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -358,14 +466,20 @@ export async function sendContactMessage(
 }
 
 
-// Get all contact messages
+// =====================================================
+// ADMIN — CONTACT MESSAGES
+// =====================================================
+
 export async function getContactMessages() {
-  const response = await fetch(
-    `${API_URL}/api/contact-messages`
-  );
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/contact-messages`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -378,16 +492,18 @@ export async function getContactMessages() {
 }
 
 
-// Get one contact message + reply history
 export async function getContactMessageById(
   id
 ) {
-  const response = await fetch(
-    `${API_URL}/api/contact-messages/${id}`
-  );
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/contact-messages/${id}`
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -400,29 +516,32 @@ export async function getContactMessageById(
 }
 
 
-// Update contact message status
 export async function updateContactMessageStatus(
   id,
   status
 ) {
-  const response = await fetch(
-    `${API_URL}/api/contact-messages/${id}`,
-    {
-      method: "PATCH",
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/contact-messages/${id}`,
+      {
+        method: "PATCH",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      body: JSON.stringify({
-        status,
-      }),
-    }
-  );
+        body:
+          JSON.stringify({
+            status,
+          }),
+      }
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(
@@ -435,29 +554,32 @@ export async function updateContactMessageStatus(
 }
 
 
-// Send admin reply to customer
 export async function sendContactReply(
   id,
   replyMessage
 ) {
-  const response = await fetch(
-    `${API_URL}/api/contact-messages/${id}/reply`,
-    {
-      method: "POST",
+  const response =
+    await authenticatedFetch(
+      `${API_URL}/api/contact-messages/${id}/reply`,
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      body: JSON.stringify({
-        replyMessage,
-      }),
-    }
-  );
+        body:
+          JSON.stringify({
+            replyMessage,
+          }),
+      }
+    );
 
   const data =
-    await response.json();
+    await readJsonResponse(
+      response
+    );
 
   if (!response.ok) {
     throw new Error(

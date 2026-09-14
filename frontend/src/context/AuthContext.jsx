@@ -13,11 +13,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
 
-  const [authLoading, setAuthLoading] =
-    useState(true);
-
-  const [profileLoading, setProfileLoading] =
+  const [authReady, setAuthReady] =
     useState(false);
+
+  const [
+    profileResolvedForUserId,
+    setProfileResolvedForUserId,
+  ] = useState(null);
+
+  // =====================================================
+  // AUTH SESSION
+  // =====================================================
 
   useEffect(() => {
     let active = true;
@@ -26,9 +32,14 @@ export function AuthProvider({ children }) {
       try {
         const {
           data: { session },
+          error,
         } = await supabase.auth.getSession();
 
         if (!active) return;
+
+        if (error) {
+          throw error;
+        }
 
         setUser(session?.user || null);
       } catch (error) {
@@ -42,7 +53,7 @@ export function AuthProvider({ children }) {
         }
       } finally {
         if (active) {
-          setAuthLoading(false);
+          setAuthReady(true);
         }
       }
     }
@@ -56,7 +67,7 @@ export function AuthProvider({ children }) {
         if (!active) return;
 
         setUser(session?.user || null);
-        setAuthLoading(false);
+        setAuthReady(true);
       }
     );
 
@@ -66,19 +77,33 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // =====================================================
+  // PROFILE
+  // =====================================================
+
   useEffect(() => {
     let active = true;
 
     async function loadProfile() {
-      if (!user) {
-        setProfile(null);
-        setProfileLoading(false);
+      // Wait until Supabase finishes restoring
+      // the current auth session.
+      if (!authReady) {
         return;
       }
 
-      try {
-        setProfileLoading(true);
+      // Logged-out state.
+      if (!user) {
+        setProfile(null);
+        setProfileResolvedForUserId(null);
+        return;
+      }
 
+      // Mark the current profile as unresolved
+      // BEFORE requesting it.
+      setProfile(null);
+      setProfileResolvedForUserId(null);
+
+      try {
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
@@ -109,7 +134,13 @@ export function AuthProvider({ children }) {
         setProfile(null);
       } finally {
         if (active) {
-          setProfileLoading(false);
+          // Important:
+          // RequireAdmin must not make a decision
+          // until profile resolution for THIS user
+          // has completed.
+          setProfileResolvedForUserId(
+            user.id
+          );
         }
       }
     }
@@ -119,7 +150,11 @@ export function AuthProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [authReady, user?.id]);
+
+  // =====================================================
+  // SIGN OUT
+  // =====================================================
 
   async function signOut() {
     const { error } =
@@ -130,15 +165,27 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // =====================================================
+  // DERIVED AUTH STATE
+  // =====================================================
+
+  const profileReady =
+    !user ||
+    profileResolvedForUserId === user.id;
+
   const loading =
-    authLoading ||
-    profileLoading;
+    !authReady ||
+    !profileReady;
 
   const isAdmin =
     profile?.role === "admin";
 
   const isClient =
     profile?.role === "client";
+
+  // =====================================================
+  // PROVIDER
+  // =====================================================
 
   return (
     <AuthContext.Provider
