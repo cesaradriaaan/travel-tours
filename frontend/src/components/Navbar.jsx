@@ -29,6 +29,14 @@ export default function Navbar() {
   } = useAuth();
 
   async function handleLogout() {
+    const confirmed = window.confirm(
+      "Are you sure you want to log out?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     await signOut();
     setOpen(false);
   }
@@ -42,7 +50,6 @@ export default function Navbar() {
           onClick={() => setOpen(false)}
         >
           <Compass size={22} strokeWidth={2} />
-
           <span>AddyVenture Travel & Tours</span>
         </NavLink>
 
@@ -161,11 +168,7 @@ export default function Navbar() {
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
-          {open ? (
-            <X size={24} />
-          ) : (
-            <Menu size={24} />
-          )}
+          {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
     </header>

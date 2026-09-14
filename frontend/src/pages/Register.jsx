@@ -1,11 +1,20 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
+
+  const from = location.state?.from || "/";
 
   const [form, setForm] = useState({
     fullName: "",
@@ -27,7 +36,7 @@ export default function Register() {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   function updateField(event) {
@@ -89,12 +98,13 @@ export default function Register() {
       }
 
       if (data.session) {
-        setSuccess("Account created successfully!");
-      } else {
-        setSuccess(
-          "Account created! Check your email to confirm your account before logging in."
-        );
+        navigate(from, { replace: true });
+        return;
       }
+
+      setSuccess(
+        "Account created! Check your email to confirm your account, then log in to continue."
+      );
 
       setForm({
         fullName: "",
@@ -123,7 +133,7 @@ export default function Register() {
       <h1>Create an account</h1>
 
       <p>
-        Save your account details and later manage your own bookings.
+        Create your account to continue booking your AddyVenture trip.
       </p>
 
       <form
@@ -146,6 +156,7 @@ export default function Register() {
             value={form.fullName}
             onChange={updateField}
             autoComplete="name"
+            required
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -163,6 +174,7 @@ export default function Register() {
             value={form.email}
             onChange={updateField}
             autoComplete="email"
+            required
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -180,6 +192,7 @@ export default function Register() {
             value={form.password}
             onChange={updateField}
             autoComplete="new-password"
+            required
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -197,6 +210,7 @@ export default function Register() {
             value={form.confirmPassword}
             onChange={updateField}
             autoComplete="new-password"
+            required
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -227,7 +241,18 @@ export default function Register() {
 
         <p>
           Already have an account?{" "}
-          <Link to="/login">Log in</Link>
+          <Link
+            to="/login"
+            state={{
+              from,
+              message:
+                from === "/booking"
+                  ? "Sign in to continue your booking."
+                  : "",
+            }}
+          >
+            Log in
+          </Link>
         </p>
       </form>
     </div>

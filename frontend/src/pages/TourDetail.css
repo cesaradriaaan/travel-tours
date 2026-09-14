@@ -206,3 +206,61 @@
 .tour-detail-page::after {
   animation: none;
 }
+
+/* Tour detail close button */
+
+.tour-detail__close-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.tour-detail__close {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  border: 1px solid rgba(18, 184, 199, 0.28);
+
+  background: var(--white);
+  color: var(--deep-water);
+  text-decoration: none;
+
+  box-shadow:
+    0 0 0 5px rgba(18, 184, 199, 0.08),
+    0 0 18px rgba(18, 184, 199, 0.28);
+
+  transition:
+    transform 0.25s var(--ease-bounce),
+    box-shadow 0.25s var(--ease),
+    background 0.25s var(--ease),
+    color 0.25s var(--ease);
+}
+
+.tour-detail__close:hover {
+  transform: scale(1.1) rotate(4deg);
+
+  background: var(--deep-water);
+  color: var(--white);
+
+  box-shadow:
+    0 0 0 7px rgba(18, 184, 199, 0.12),
+    0 0 26px rgba(18, 184, 199, 0.48);
+}
+
+.tour-detail__close:active {
+  transform: scale(0.94);
+}
+
+.tour-detail__close:focus-visible {
+  outline: none;
+
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 1),
+    0 0 0 7px rgba(18, 184, 199, 0.45),
+    0 0 25px rgba(18, 184, 199, 0.35);
+}

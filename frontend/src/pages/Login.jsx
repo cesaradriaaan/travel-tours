@@ -1,12 +1,21 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
+
+  const from = location.state?.from || "/";
+  const message = location.state?.message || "";
 
   const [form, setForm] = useState({
     email: "",
@@ -25,7 +34,7 @@ export default function Login() {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   function updateField(event) {
@@ -56,7 +65,7 @@ export default function Login() {
         throw loginError;
       }
 
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (error) {
       setError(error.message || "Unable to log in.");
     } finally {
@@ -81,6 +90,18 @@ export default function Login() {
         Access your AddyVenture account using your email and password.
       </p>
 
+      {message && (
+        <p
+          role="status"
+          style={{
+            marginTop: "1rem",
+            fontWeight: "600",
+          }}
+        >
+          {message}
+        </p>
+      )}
+
       <form
         onSubmit={handleSubmit}
         style={{
@@ -101,6 +122,7 @@ export default function Login() {
             value={form.email}
             onChange={updateField}
             autoComplete="email"
+            required
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -118,6 +140,7 @@ export default function Login() {
             value={form.password}
             onChange={updateField}
             autoComplete="current-password"
+            required
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -142,7 +165,12 @@ export default function Login() {
 
         <p>
           Don't have an account?{" "}
-          <Link to="/register">Create one</Link>
+          <Link
+            to="/register"
+            state={{ from }}
+          >
+            Create one
+          </Link>
         </p>
       </form>
     </div>

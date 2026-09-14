@@ -4,6 +4,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import RequireAdmin from "./components/RequireAdmin";
+import RequireAuth from "./components/RequireAuth";
 
 import Home from "./pages/Home";
 import Tours from "./pages/Tours";
@@ -75,7 +76,16 @@ export default function App() {
           <Route path="/tours" element={<Tours />} />
           <Route path="/tours/:id" element={<TourDetail />} />
           <Route path="/plan-trip" element={<PlanTrip />} />
-          <Route path="/booking" element={<Booking />} />
+
+          <Route
+            path="/booking"
+            element={
+              <RequireAuth>
+                <Booking />
+              </RequireAuth>
+            }
+          />
+
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
 
