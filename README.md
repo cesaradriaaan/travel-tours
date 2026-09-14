@@ -31,7 +31,3 @@ travel-tours/
 - [x] **Phase 3** — Itinerary Planner (day-by-day builder)
 - [x] **Phase 4** — Booking flow (3-step)
 - [x] **Phase 5** — About / Contact + polish + accessibility pass
-
-Every route already works and is wired to shared state (`TripContext`),
-so you can click through the whole site now — later phases replace the
-placeholder pages with fully-designed ones.
