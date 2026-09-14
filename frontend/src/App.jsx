@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
 import Home from "./pages/Home";
 import Tours from "./pages/Tours";
 import TourDetail from "./pages/TourDetail";
@@ -9,6 +11,10 @@ import PlanTrip from "./pages/PlanTrip";
 import Booking from "./pages/Booking";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+
+import AdminBookings from "./pages/AdminBookings";
+import AdminMessages from "./pages/AdminMessages";
+
 import { checkBackendHealth } from "./services/api";
 
 const pageTitles = {
@@ -18,6 +24,8 @@ const pageTitles = {
   "/booking": "Booking | AddyVenture",
   "/about": "About | AddyVenture",
   "/contact": "Contact | AddyVenture",
+  "/admin/bookings": "Admin Bookings | AddyVenture",
+  "/admin/messages": "Admin Messages | AddyVenture",
 };
 
 function RouteEffects() {
@@ -26,7 +34,8 @@ function RouteEffects() {
   useEffect(() => {
     document.title = pathname.startsWith("/tours/")
       ? "Tour Details | AddyVenture"
-      : pageTitles[pathname] || "AddyVenture Travel & Tours";
+      : pageTitles[pathname] ||
+        "AddyVenture Travel & Tours";
 
     window.scrollTo(0, 0);
   }, [pathname]);
@@ -59,11 +68,33 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tours" element={<Tours />} />
-          <Route path="/tours/:id" element={<TourDetail />} />
-          <Route path="/plan-trip" element={<PlanTrip />} />
-          <Route path="/booking" element={<Booking />} />
+          <Route
+            path="/tours/:id"
+            element={<TourDetail />}
+          />
+          <Route
+            path="/plan-trip"
+            element={<PlanTrip />}
+          />
+          <Route
+            path="/booking"
+            element={<Booking />}
+          />
           <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/contact"
+            element={<Contact />}
+          />
+
+          <Route
+            path="/admin/bookings"
+            element={<AdminBookings />}
+          />
+
+          <Route
+            path="/admin/messages"
+            element={<AdminMessages />}
+          />
         </Routes>
       </main>
 
