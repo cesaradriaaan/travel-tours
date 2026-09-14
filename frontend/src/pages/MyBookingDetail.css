@@ -1,0 +1,472 @@
+.booking-detail-page {
+  max-width: 1180px;
+  padding-top: 3rem;
+}
+
+/* Keep a consistent 3rem breather before the footer */
+.booking-detail-page.container {
+  padding-bottom: 3rem;
+}
+
+.booking-detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  margin-bottom: 1.5rem;
+
+  color: var(--deep-water);
+
+  font-weight: 700;
+
+  text-decoration: none;
+}
+
+.booking-detail__back:hover {
+  text-decoration: underline;
+}
+
+.booking-detail__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 2rem;
+
+  margin-bottom: 2rem;
+}
+
+.booking-detail__hero h1 {
+  margin: 0.2rem 0 0.45rem;
+}
+
+.booking-detail__hero p {
+  margin: 0;
+
+  color: var(--ink-soft);
+}
+
+.booking-detail__eyebrow {
+  font-size: 0.78rem;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  color: var(--lagoon-deep) !important;
+}
+
+.booking-detail__status {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.45rem;
+
+  padding: 0.55rem 0.9rem;
+
+  border-radius: 999px;
+
+  background:
+    rgba(18, 184, 199, 0.12);
+
+  color: var(--deep-water);
+
+  font-size: 0.88rem;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.booking-detail__layout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(280px, 360px);
+
+  gap: 1.5rem;
+
+  align-items: start;
+}
+
+.booking-detail__main {
+  display: grid;
+
+  gap: 1.5rem;
+}
+
+.booking-detail__card {
+  background: var(--white);
+
+  border: 1px solid var(--line);
+
+  border-radius:
+    var(--radius-md);
+
+  padding: 1.75rem;
+
+  box-shadow:
+    var(--shadow-sm);
+}
+
+.booking-detail__heading {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 0.8rem;
+
+  margin-bottom: 1.5rem;
+}
+
+.booking-detail__heading > svg {
+  margin-top: 0.15rem;
+
+  color: var(--lagoon-deep);
+}
+
+.booking-detail__heading h2 {
+  margin: 0 0 0.2rem;
+
+  font-size: 1.15rem;
+}
+
+.booking-detail__heading p {
+  margin: 0;
+
+  color: var(--ink-soft);
+
+  font-size: 0.9rem;
+}
+
+.booking-detail__info-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 1.25rem;
+}
+
+.booking-detail__info-grid span {
+  display: block;
+
+  margin-bottom: 0.35rem;
+
+  color: var(--ink-soft);
+
+  font-size: 0.8rem;
+}
+
+.booking-detail__info-grid strong {
+  color: var(--deep-water);
+}
+
+.booking-detail__inline {
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+}
+
+.booking-detail__trip-meta {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 1rem;
+
+  margin-bottom: 1.5rem;
+}
+
+.booking-detail__trip-meta > div {
+  display: flex;
+  align-items: center;
+
+  gap: 0.8rem;
+
+  padding: 1rem;
+
+  border: 1px solid var(--line);
+
+  border-radius:
+    var(--radius-sm);
+
+  background:
+    rgba(18, 184, 199, 0.045);
+}
+
+.booking-detail__trip-meta svg {
+  color: var(--lagoon-deep);
+}
+
+.booking-detail__trip-meta span {
+  display: grid;
+
+  gap: 0.15rem;
+}
+
+.booking-detail__trip-meta small {
+  color: var(--ink-soft);
+}
+
+.booking-detail__itinerary {
+  display: grid;
+
+  gap: 1rem;
+}
+
+.booking-detail__itinerary-item {
+  display: grid;
+
+  grid-template-columns:
+    auto 1fr;
+
+  gap: 1rem;
+
+  padding: 1rem 0;
+
+  border-top:
+    1px solid var(--line);
+}
+
+.booking-detail__day {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background:
+    var(--deep-water);
+
+  color: var(--white);
+
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.booking-detail__itinerary-item h3 {
+  margin: 0;
+
+  font-size: 1rem;
+}
+
+.booking-detail__itinerary-item p {
+  display: flex;
+  align-items: center;
+
+  gap: 0.35rem;
+
+  margin: 0.35rem 0 0;
+
+  color: var(--ink-soft);
+}
+
+.booking-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 0.45rem;
+
+  margin-top: 0.65rem;
+}
+
+.booking-detail__tags span {
+  padding:
+    0.28rem 0.55rem;
+
+  border-radius: 999px;
+
+  background:
+    rgba(18, 184, 199, 0.09);
+
+  color: var(--deep-water);
+
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.booking-detail__sidebar {
+  position: sticky;
+
+  top: 6.5rem;
+}
+
+.booking-detail__summary {
+  padding: 1.5rem;
+}
+
+.booking-detail__price-row,
+.booking-detail__voucher,
+.booking-detail__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+}
+
+.booking-detail__price-row {
+  padding: 0.65rem 0;
+
+  color: var(--ink-soft);
+}
+
+.booking-detail__price-row strong {
+  color: var(--deep-water);
+}
+
+.booking-detail__voucher {
+  margin-top: 0.7rem;
+
+  padding: 0.8rem 0;
+
+  border-top:
+    1px dashed var(--line);
+}
+
+.booking-detail__voucher span {
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  color: var(--lagoon-deep);
+
+  font-weight: 700;
+}
+
+.booking-detail__voucher strong {
+  padding:
+    0.25rem 0.55rem;
+
+  border-radius: 999px;
+
+  background:
+    rgba(18, 184, 199, 0.1);
+
+  color: var(--deep-water);
+
+  font-size: 0.78rem;
+}
+
+.booking-detail__discount strong {
+  color: #16865b;
+}
+
+.booking-detail__total {
+  margin-top: 0.75rem;
+
+  padding-top: 1rem;
+
+  border-top:
+    1px solid var(--line);
+}
+
+.booking-detail__total span {
+  color: var(--deep-water);
+
+  font-weight: 800;
+}
+
+.booking-detail__total strong {
+  font-family:
+    var(--font-display);
+
+  font-size: 1.45rem;
+
+  color: var(--coral-tide);
+}
+
+.booking-detail__note {
+  margin: 1rem 0 0;
+
+  color: var(--ink-soft);
+
+  font-size: 0.8rem;
+
+  line-height: 1.55;
+}
+
+.booking-detail__empty {
+  margin: 0;
+
+  color: var(--ink-soft);
+}
+
+.booking-detail__error {
+  max-width: 650px;
+
+  margin: 3rem auto;
+
+  padding: 2rem;
+
+  text-align: center;
+
+  background: var(--white);
+
+  border: 1px solid var(--line);
+
+  border-radius:
+    var(--radius-md);
+
+  box-shadow:
+    var(--shadow-sm);
+}
+
+.booking-detail__error h1 {
+  margin-top: 0;
+}
+
+.booking-detail__error p {
+  margin-bottom: 1.5rem;
+
+  color: var(--ink-soft);
+}
+
+
+@media (max-width: 850px) {
+  .booking-detail__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-detail__sidebar {
+    position: static;
+  }
+}
+
+
+@media (max-width: 650px) {
+  .booking-detail-page {
+    padding-top: 2rem;
+  }
+
+  .booking-detail-page.container {
+    padding-bottom: 3rem;
+  }
+
+  .booking-detail__hero {
+    flex-direction: column;
+
+    gap: 1rem;
+  }
+
+  .booking-detail__info-grid,
+  .booking-detail__trip-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-detail__card {
+    padding: 1.25rem;
+  }
+}

@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -16,6 +20,9 @@ import Contact from "./pages/Contact";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Account from "./pages/Account";
+import MyBookings from "./pages/MyBookings";
+import MyBookingDetail from "./pages/MyBookingDetail";
 
 import AdminBookings from "./pages/AdminBookings";
 import AdminMessages from "./pages/AdminMessages";
@@ -29,19 +36,32 @@ const pageTitles = {
   "/booking": "Booking | AddyVenture",
   "/about": "About | AddyVenture",
   "/contact": "Contact | AddyVenture",
+
   "/login": "Login | AddyVenture",
   "/register": "Create Account | AddyVenture",
-  "/admin/bookings": "Admin Bookings | AddyVenture",
-  "/admin/messages": "Admin Messages | AddyVenture",
+  "/account": "My Account | AddyVenture",
+  "/my-bookings": "My Bookings | AddyVenture",
+
+  "/admin/bookings":
+    "Admin Bookings | AddyVenture",
+
+  "/admin/messages":
+    "Admin Messages | AddyVenture",
 };
 
 function RouteEffects() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    document.title = pathname.startsWith("/tours/")
-      ? "Tour Details | AddyVenture"
-      : pageTitles[pathname] || "AddyVenture Travel & Tours";
+    document.title =
+      pathname.startsWith("/tours/")
+        ? "Tour Details | AddyVenture"
+        : pathname.startsWith(
+            "/my-bookings/"
+          )
+        ? "Booking Details | AddyVenture"
+        : pageTitles[pathname] ||
+          "AddyVenture Travel & Tours";
 
     window.scrollTo(0, 0);
   }, [pathname]);
@@ -53,10 +73,16 @@ export default function App() {
   useEffect(() => {
     checkBackendHealth()
       .then((data) => {
-        console.log("Backend connected:", data);
+        console.log(
+          "Backend connected:",
+          data
+        );
       })
       .catch((error) => {
-        console.error("Backend error:", error);
+        console.error(
+          "Backend error:",
+          error
+        );
       });
   }, []);
 
@@ -64,7 +90,10 @@ export default function App() {
     <>
       <RouteEffects />
 
-      <a className="skip-link" href="#main-content">
+      <a
+        className="skip-link"
+        href="#main-content"
+      >
         Skip to main content
       </a>
 
@@ -72,10 +101,25 @@ export default function App() {
 
       <main id="main-content">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/tours" element={<Tours />} />
-          <Route path="/tours/:id" element={<TourDetail />} />
-          <Route path="/plan-trip" element={<PlanTrip />} />
+          <Route
+            path="/"
+            element={<Home />}
+          />
+
+          <Route
+            path="/tours"
+            element={<Tours />}
+          />
+
+          <Route
+            path="/tours/:id"
+            element={<TourDetail />}
+          />
+
+          <Route
+            path="/plan-trip"
+            element={<PlanTrip />}
+          />
 
           <Route
             path="/booking"
@@ -86,11 +130,52 @@ export default function App() {
             }
           />
 
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/account"
+            element={
+              <RequireAuth>
+                <Account />
+              </RequireAuth>
+            }
+          />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route
+            path="/my-bookings"
+            element={
+              <RequireAuth>
+                <MyBookings />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/my-bookings/:id"
+            element={
+              <RequireAuth>
+                <MyBookingDetail />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/about"
+            element={<About />}
+          />
+
+          <Route
+            path="/contact"
+            element={<Contact />}
+          />
+
+          <Route
+            path="/login"
+            element={<Login />}
+          />
+
+          <Route
+            path="/register"
+            element={<Register />}
+          />
 
           <Route
             path="/admin/bookings"

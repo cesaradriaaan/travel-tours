@@ -4,6 +4,22 @@ const API_URL =
   import.meta.env.VITE_API_URL;
 
 
+// Get current user's access token
+async function getAccessToken() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error(
+      "Please log in to continue."
+    );
+  }
+
+  return session.access_token;
+}
+
+
 // Check backend
 export async function checkBackendHealth() {
   const response = await fetch(
@@ -24,16 +40,8 @@ export async function checkBackendHealth() {
 export async function createBooking(
   bookingData
 ) {
-  const {
-    data: { session },
-  } =
-    await supabase.auth.getSession();
-
-  if (!session?.access_token) {
-    throw new Error(
-      "Please log in before booking your trip."
-    );
-  }
+  const accessToken =
+    await getAccessToken();
 
   const response = await fetch(
     `${API_URL}/api/bookings`,
@@ -45,13 +53,12 @@ export async function createBooking(
           "application/json",
 
         Authorization:
-          `Bearer ${session.access_token}`,
+          `Bearer ${accessToken}`,
       },
 
-      body:
-        JSON.stringify(
-          bookingData
-        ),
+      body: JSON.stringify(
+        bookingData
+      ),
     }
   );
 
@@ -62,6 +69,136 @@ export async function createBooking(
     throw new Error(
       data.message ||
         "Booking request failed"
+    );
+  }
+
+  return data;
+}
+
+
+// Get logged-in user's vouchers
+export async function getMyVouchers() {
+  const accessToken =
+    await getAccessToken();
+
+  const response = await fetch(
+    `${API_URL}/api/my-vouchers`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to load your vouchers"
+    );
+  }
+
+  return data;
+}
+
+
+// Get logged-in user's bookings
+export async function getMyBookings() {
+  const accessToken =
+    await getAccessToken();
+
+  const response = await fetch(
+    `${API_URL}/api/my-bookings`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to load your bookings"
+    );
+  }
+
+  return data;
+}
+
+
+// Get one logged-in user's booking
+export async function getMyBookingById(
+  id
+) {
+  const accessToken =
+    await getAccessToken();
+
+  const response = await fetch(
+    `${API_URL}/api/my-bookings/${id}`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to load your booking"
+    );
+  }
+
+  return data;
+}
+
+
+// Request cancellation for user's own booking
+export async function requestBookingCancellation(
+  id,
+  reason = ""
+) {
+  const accessToken =
+    await getAccessToken();
+
+  const response = await fetch(
+    `${API_URL}/api/my-bookings/${id}/cancellation-request`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        Authorization:
+          `Bearer ${accessToken}`,
+      },
+
+      body: JSON.stringify({
+        reason,
+      }),
+    }
+  );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to request cancellation"
     );
   }
 
@@ -146,6 +283,47 @@ export async function updateBookingStatus(
 }
 
 
+// Admin approve/reject cancellation request
+export async function resolveBookingCancellation(
+  id,
+  decision
+) {
+  const accessToken =
+    await getAccessToken();
+
+  const response = await fetch(
+    `${API_URL}/api/bookings/${id}/cancellation-resolution`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        Authorization:
+          `Bearer ${accessToken}`,
+      },
+
+      body: JSON.stringify({
+        decision,
+      }),
+    }
+  );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        "Unable to resolve cancellation request"
+    );
+  }
+
+  return data;
+}
+
+
 // Send contact message
 export async function sendContactMessage(
   contactData
@@ -160,10 +338,9 @@ export async function sendContactMessage(
           "application/json",
       },
 
-      body:
-        JSON.stringify(
-          contactData
-        ),
+      body: JSON.stringify(
+        contactData
+      ),
     }
   );
 

@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  ChevronDown,
+  X,
+} from "lucide-react";
 
 import {
   getContactMessages,
@@ -7,89 +16,344 @@ import {
   sendContactReply,
 } from "../services/api";
 
-const STATUSES = ["Unread", "Read", "Replied"];
+
+const STATUSES = [
+  "Unread",
+  "Read",
+  "Replied",
+];
+
 
 function formatDate(value) {
-  if (!value) return "—";
+  if (!value) {
+    return "—";
+  }
 
-  return new Intl.DateTimeFormat("en-PH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat(
+    "en-PH",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }
+  ).format(
+    new Date(value)
+  );
 }
 
+
+function getStatusColors(status) {
+  switch (status) {
+    case "Unread":
+      return {
+        background:
+          "rgba(239, 68, 68, 0.1)",
+        color:
+          "#a82424",
+      };
+
+    case "Read":
+      return {
+        background:
+          "rgba(14, 165, 233, 0.11)",
+        color:
+          "#036b91",
+      };
+
+    case "Replied":
+      return {
+        background:
+          "rgba(22, 163, 74, 0.11)",
+        color:
+          "#14783a",
+      };
+
+    default:
+      return {
+        background:
+          "rgba(100, 116, 139, 0.1)",
+        color:
+          "#475569",
+      };
+  }
+}
+
+
+function StatusBadge({
+  status,
+}) {
+  const colors =
+    getStatusColors(status);
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+
+        padding:
+          "0.5rem 0.8rem",
+
+        borderRadius:
+          "999px",
+
+        background:
+          colors.background,
+
+        color:
+          colors.color,
+
+        fontSize:
+          "0.82rem",
+
+        fontWeight: 800,
+
+        whiteSpace: "nowrap",
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+
+function StatusSelect({
+  value,
+  disabled,
+  onChange,
+}) {
+  const colors =
+    getStatusColors(value);
+
+  return (
+    <div
+      style={{
+        position: "relative",
+
+        display:
+          "inline-flex",
+
+        alignItems:
+          "center",
+      }}
+    >
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={onChange}
+        style={{
+          appearance:
+            "none",
+
+          WebkitAppearance:
+            "none",
+
+          border:
+            "none",
+
+          outline:
+            "none",
+
+          borderRadius:
+            "999px",
+
+          padding:
+            "0.55rem 2rem 0.55rem 0.85rem",
+
+          background:
+            colors.background,
+
+          color:
+            colors.color,
+
+          font:
+            "inherit",
+
+          fontSize:
+            "0.82rem",
+
+          fontWeight:
+            800,
+
+          cursor:
+            disabled
+              ? "wait"
+              : "pointer",
+        }}
+      >
+        {STATUSES.map(
+          (status) => (
+            <option
+              key={status}
+              value={status}
+            >
+              {status}
+            </option>
+          )
+        )}
+      </select>
+
+      <ChevronDown
+        size={15}
+        style={{
+          position:
+            "absolute",
+
+          right:
+            "0.65rem",
+
+          pointerEvents:
+            "none",
+
+          color:
+            colors.color,
+        }}
+      />
+    </div>
+  );
+}
+
+
 export default function AdminMessages() {
-  const [messages, setMessages] = useState([]);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [
+    messages,
+    setMessages,
+  ] = useState([]);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [
+    selectedMessage,
+    setSelectedMessage,
+  ] = useState(null);
 
-  const [replyMessage, setReplyMessage] = useState("");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
 
-  const [loading, setLoading] = useState(true);
-  const [detailsLoading, setDetailsLoading] = useState(false);
-  const [updatingId, setUpdatingId] = useState(null);
-  const [sendingReply, setSendingReply] = useState(false);
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("All");
 
-  const [error, setError] = useState("");
-  const [replyError, setReplyError] = useState("");
-  const [replySuccess, setReplySuccess] = useState("");
+  const [
+    replyMessage,
+    setReplyMessage,
+  ] = useState("");
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    detailsLoading,
+    setDetailsLoading,
+  ] = useState(false);
+
+  const [
+    updatingId,
+    setUpdatingId,
+  ] = useState(null);
+
+  const [
+    sendingReply,
+    setSendingReply,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    replyError,
+    setReplyError,
+  ] = useState("");
+
+  const [
+    replySuccess,
+    setReplySuccess,
+  ] = useState("");
+
 
   useEffect(() => {
     loadMessages();
   }, []);
+
 
   async function loadMessages() {
     try {
       setLoading(true);
       setError("");
 
-      const result = await getContactMessages();
+      const result =
+        await getContactMessages();
 
-      setMessages(result.messages || []);
+      setMessages(
+        result.messages || []
+      );
     } catch (error) {
-      setError(error.message);
+      setError(
+        error.message
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleStatusChange(id, status) {
+
+  async function handleStatusChange(
+    id,
+    status
+  ) {
     try {
       setUpdatingId(id);
       setError("");
 
-      await updateContactMessageStatus(id, status);
-
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === id
-            ? {
-                ...message,
-                status,
-              }
-            : message
-        )
+      await updateContactMessageStatus(
+        id,
+        status
       );
 
-      if (selectedMessage?.id === id) {
-        setSelectedMessage((current) => ({
-          ...current,
-          status,
-        }));
+      setMessages(
+        (current) =>
+          current.map(
+            (message) =>
+              message.id === id
+                ? {
+                    ...message,
+                    status,
+                  }
+                : message
+          )
+      );
+
+      if (
+        selectedMessage?.id ===
+        id
+      ) {
+        setSelectedMessage(
+          (current) => ({
+            ...current,
+            status,
+          })
+        );
       }
     } catch (error) {
-      setError(error.message);
+      setError(
+        error.message
+      );
     } finally {
       setUpdatingId(null);
     }
   }
 
-  async function handleViewMessage(id) {
+
+  async function handleViewMessage(
+    id
+  ) {
     try {
       setDetailsLoading(true);
       setError("");
@@ -97,48 +361,76 @@ export default function AdminMessages() {
       setReplySuccess("");
       setReplyMessage("");
 
-      const result = await getContactMessageById(id);
+      const result =
+        await getContactMessageById(
+          id
+        );
 
       let message = {
         ...result.message,
-        replies: result.replies || [],
+
+        replies:
+          result.replies || [],
       };
 
-      if (message.status === "Unread") {
-        await updateContactMessageStatus(id, "Read");
+      if (
+        message.status ===
+        "Unread"
+      ) {
+        await updateContactMessageStatus(
+          id,
+          "Read"
+        );
 
         message = {
           ...message,
           status: "Read",
         };
 
-        setMessages((current) =>
-          current.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  status: "Read",
-                }
-              : item
-          )
+        setMessages(
+          (current) =>
+            current.map(
+              (item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      status:
+                        "Read",
+                    }
+                  : item
+            )
         );
       }
 
-      setSelectedMessage(message);
+      setSelectedMessage(
+        message
+      );
     } catch (error) {
-      setError(error.message);
+      setError(
+        error.message
+      );
     } finally {
       setDetailsLoading(false);
     }
   }
 
-  async function handleSendReply(event) {
+
+  async function handleSendReply(
+    event
+  ) {
     event.preventDefault();
 
-    const cleanReply = replyMessage.trim();
+    const cleanReply =
+      replyMessage.trim();
 
-    if (cleanReply.length < 2) {
-      setReplyError("Please enter a reply message.");
+    if (
+      cleanReply.length <
+      2
+    ) {
+      setReplyError(
+        "Please enter a reply message."
+      );
+
       return;
     }
 
@@ -147,112 +439,188 @@ export default function AdminMessages() {
       setReplyError("");
       setReplySuccess("");
 
-      const result = await sendContactReply(
-        selectedMessage.id,
-        cleanReply
+      const result =
+        await sendContactReply(
+          selectedMessage.id,
+          cleanReply
+        );
+
+      setSelectedMessage(
+        (current) => ({
+          ...current,
+
+          status:
+            "Replied",
+
+          replies: [
+            ...(current.replies ||
+              []),
+
+            result.reply,
+          ],
+        })
       );
 
-      setSelectedMessage((current) => ({
-        ...current,
-        status: "Replied",
-        replies: [
-          ...(current.replies || []),
-          result.reply,
-        ],
-      }));
-
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === selectedMessage.id
-            ? {
-                ...message,
-                status: "Replied",
-              }
-            : message
-        )
+      setMessages(
+        (current) =>
+          current.map(
+            (message) =>
+              message.id ===
+              selectedMessage.id
+                ? {
+                    ...message,
+                    status:
+                      "Replied",
+                  }
+                : message
+          )
       );
 
       setReplyMessage("");
-      setReplySuccess("Reply sent successfully!");
+
+      setReplySuccess(
+        "Reply sent successfully!"
+      );
     } catch (error) {
       setReplyError(
-        error.message || "Unable to send reply."
+        error.message ||
+          "Unable to send reply."
       );
     } finally {
       setSendingReply(false);
     }
   }
 
-  const filteredMessages = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
 
-    return messages.filter((message) => {
-      const matchesSearch =
-        !keyword ||
-        message.name
-          ?.toLowerCase()
-          .includes(keyword) ||
-        message.email
-          ?.toLowerCase()
-          .includes(keyword) ||
-        message.subject
-          ?.toLowerCase()
-          .includes(keyword) ||
-        message.message
-          ?.toLowerCase()
-          .includes(keyword);
+  const filteredMessages =
+    useMemo(() => {
+      const keyword =
+        search
+          .trim()
+          .toLowerCase();
 
-      const matchesStatus =
-        statusFilter === "All" ||
-        message.status === statusFilter;
+      return messages.filter(
+        (message) => {
+          const matchesSearch =
+            !keyword ||
+            message.name
+              ?.toLowerCase()
+              .includes(
+                keyword
+              ) ||
+            message.email
+              ?.toLowerCase()
+              .includes(
+                keyword
+              ) ||
+            message.subject
+              ?.toLowerCase()
+              .includes(
+                keyword
+              ) ||
+            message.message
+              ?.toLowerCase()
+              .includes(
+                keyword
+              );
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [messages, search, statusFilter]);
+          const matchesStatus =
+            statusFilter ===
+              "All" ||
+            message.status ===
+              statusFilter;
 
-  const unreadCount = messages.filter(
-    (message) => message.status === "Unread"
-  ).length;
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+        }
+      );
+    }, [
+      messages,
+      search,
+      statusFilter,
+    ]);
+
+
+  const unreadCount =
+    messages.filter(
+      (message) =>
+        message.status ===
+        "Unread"
+    ).length;
+
 
   if (loading) {
     return (
       <div className="container">
-        <h1>Loading messages...</h1>
+        <h1>
+          Loading messages...
+        </h1>
       </div>
     );
   }
+
 
   return (
     <div
       className="container"
       style={{
-        paddingTop: "3rem",
-        paddingBottom: "4rem",
+        paddingTop:
+          "3rem",
+
+        paddingBottom:
+          "3rem",
       }}
     >
-      <span className="eyebrow">Admin</span>
+      <span className="eyebrow">
+        Admin
+      </span>
 
-      <h1>Contact Inbox</h1>
+      <h1>
+        Contact Inbox
+      </h1>
 
       <p>
-        View, reply to, and manage messages submitted
-        through the AddyVenture contact form.
+        View, reply to, and manage
+        messages submitted through the
+        AddyVenture contact form.
       </p>
 
       <p>
-        <strong>{unreadCount}</strong> unread message
-        {unreadCount === 1 ? "" : "s"}
+        <strong>
+          {unreadCount}
+        </strong>{" "}
+        unread message
+        {unreadCount === 1
+          ? ""
+          : "s"}
       </p>
+
 
       {error && (
-        <p
+        <div
           style={{
-            marginTop: "1rem",
+            marginTop:
+              "1rem",
+
+            padding:
+              "0.9rem 1rem",
+
+            borderRadius:
+              "10px",
+
+            background:
+              "rgba(220, 38, 38, 0.07)",
+
+            color:
+              "#a11",
           }}
         >
           Error: {error}
-        </p>
+        </div>
       )}
+
 
       {/* SEARCH + FILTER */}
       <div
@@ -260,8 +628,12 @@ export default function AdminMessages() {
           display: "flex",
           gap: "1rem",
           flexWrap: "wrap",
-          marginTop: "2rem",
-          marginBottom: "1.5rem",
+
+          marginTop:
+            "2rem",
+
+          marginBottom:
+            "1.5rem",
         }}
       >
         <input
@@ -269,180 +641,310 @@ export default function AdminMessages() {
           placeholder="Search name, email, topic, or message..."
           value={search}
           onChange={(event) =>
-            setSearch(event.target.value)
+            setSearch(
+              event.target.value
+            )
           }
           style={{
             flex: "1",
-            minWidth: "260px",
-            padding: "0.8rem",
+
+            minWidth:
+              "260px",
+
+            padding:
+              "0.85rem 1rem",
+
+            border:
+              "1px solid var(--line)",
+
+            borderRadius:
+              "12px",
+
+            background:
+              "white",
+
+            font:
+              "inherit",
           }}
         />
 
         <select
-          value={statusFilter}
+          value={
+            statusFilter
+          }
           onChange={(event) =>
-            setStatusFilter(event.target.value)
+            setStatusFilter(
+              event.target.value
+            )
           }
           style={{
-            padding: "0.8rem",
+            padding:
+              "0.85rem 1rem",
+
+            border:
+              "1px solid var(--line)",
+
+            borderRadius:
+              "12px",
+
+            background:
+              "white",
+
+            font:
+              "inherit",
           }}
         >
           <option value="All">
             All Statuses
           </option>
 
-          {STATUSES.map((status) => (
-            <option
-              key={status}
-              value={status}
-            >
-              {status}
-            </option>
-          ))}
+          {STATUSES.map(
+            (status) => (
+              <option
+                key={status}
+                value={status}
+              >
+                {status}
+              </option>
+            )
+          )}
         </select>
 
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={loadMessages}
+          onClick={
+            loadMessages
+          }
         >
           Refresh
         </button>
       </div>
 
+
       <p>
         Showing{" "}
         <strong>
-          {filteredMessages.length}
+          {
+            filteredMessages.length
+          }
         </strong>{" "}
-        of <strong>{messages.length}</strong>{" "}
+        of{" "}
+        <strong>
+          {messages.length}
+        </strong>{" "}
         messages
       </p>
+
 
       {/* MESSAGE TABLE */}
       <div
         style={{
-          overflowX: "auto",
-          marginTop: "1rem",
+          overflowX:
+            "auto",
+
+          marginTop:
+            "1rem",
         }}
       >
         <table
           style={{
-            width: "100%",
-            borderCollapse: "collapse",
+            width:
+              "100%",
+
+            borderCollapse:
+              "collapse",
           }}
         >
           <thead>
             <tr>
-              <th align="left">Sender</th>
-              <th align="left">Topic</th>
-              <th align="left">Received</th>
-              <th align="left">Status</th>
-              <th align="left">Action</th>
+              <th align="left">
+                Sender
+              </th>
+
+              <th align="left">
+                Topic
+              </th>
+
+              <th align="left">
+                Received
+              </th>
+
+              <th align="left">
+                Status
+              </th>
+
+              <th align="left">
+                Action
+              </th>
             </tr>
           </thead>
 
           <tbody>
-            {filteredMessages.map((message) => (
-              <tr key={message.id}>
-                <td>
-                  <strong>{message.name}</strong>
-                  <br />
-                  <small>{message.email}</small>
-                </td>
+            {filteredMessages.map(
+              (message) => (
+                <tr
+                  key={
+                    message.id
+                  }
+                >
+                  <td>
+                    <strong>
+                      {
+                        message.name
+                      }
+                    </strong>
 
-                <td>{message.subject}</td>
+                    <br />
 
-                <td>
-                  {formatDate(message.createdAt)}
-                </td>
+                    <small>
+                      {
+                        message.email
+                      }
+                    </small>
+                  </td>
 
-                <td>
-                  <select
-                    value={message.status}
-                    disabled={
-                      updatingId === message.id
+                  <td>
+                    {
+                      message.subject
                     }
-                    onChange={(event) =>
-                      handleStatusChange(
-                        message.id,
-                        event.target.value
-                      )
-                    }
-                  >
-                    {STATUSES.map((status) => (
-                      <option
-                        key={status}
-                        value={status}
-                      >
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </td>
+                  </td>
 
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() =>
-                      handleViewMessage(message.id)
-                    }
-                  >
-                    View Message
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td>
+                    {formatDate(
+                      message.createdAt
+                    )}
+                  </td>
+
+                  <td>
+                    <StatusSelect
+                      value={
+                        message.status
+                      }
+                      disabled={
+                        updatingId ===
+                        message.id
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        handleStatusChange(
+                          message.id,
+                          event.target
+                            .value
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() =>
+                        handleViewMessage(
+                          message.id
+                        )
+                      }
+                    >
+                      View Message
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>
 
-      {filteredMessages.length === 0 && (
+
+      {filteredMessages.length ===
+        0 && (
         <p
           style={{
-            marginTop: "2rem",
+            marginTop:
+              "2rem",
           }}
         >
-          No matching messages found.
+          No matching messages
+          found.
         </p>
       )}
+
 
       {detailsLoading && (
         <p
           style={{
-            marginTop: "2rem",
+            marginTop:
+              "2rem",
           }}
         >
           Loading message...
         </p>
       )}
 
+
       {/* MESSAGE MODAL */}
       {selectedMessage && (
         <div
           style={{
-            position: "fixed",
+            position:
+              "fixed",
+
             inset: 0,
-            background: "rgba(0, 0, 0, 0.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-            zIndex: 9999,
+
+            background:
+              "rgba(3, 24, 32, 0.58)",
+
+            backdropFilter:
+              "blur(4px)",
+
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "center",
+
+            padding:
+              "1rem",
+
+            zIndex:
+              9999,
           }}
           onClick={() =>
-            setSelectedMessage(null)
+            setSelectedMessage(
+              null
+            )
           }
         >
           <div
             style={{
-              background: "white",
-              width: "min(760px, 100%)",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              borderRadius: "16px",
-              padding: "2rem",
+              position:
+                "relative",
+
+              background:
+                "white",
+
+              width:
+                "min(760px, 100%)",
+
+              maxHeight:
+                "90vh",
+
+              overflowY:
+                "auto",
+
+              borderRadius:
+                "22px",
+
+              padding:
+                "2.25rem",
+
+              boxShadow:
+                "0 25px 70px rgba(3, 24, 32, 0.28)",
             }}
             onClick={(event) =>
               event.stopPropagation()
@@ -450,53 +952,162 @@ export default function AdminMessages() {
           >
             <button
               type="button"
+              aria-label="Close message"
               onClick={() =>
-                setSelectedMessage(null)
+                setSelectedMessage(
+                  null
+                )
               }
               style={{
-                float: "right",
+                position:
+                  "absolute",
+
+                top:
+                  "1.25rem",
+
+                right:
+                  "1.25rem",
+
+                width:
+                  "42px",
+
+                height:
+                  "42px",
+
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
+                border:
+                  "1px solid var(--line)",
+
+                borderRadius:
+                  "50%",
+
+                background:
+                  "white",
+
+                color:
+                  "var(--deep-water)",
+
+                cursor:
+                  "pointer",
               }}
             >
-              Close
+              <X size={20} />
             </button>
+
 
             <span className="eyebrow">
               Contact Message
             </span>
 
-            <h2>
-              {selectedMessage.subject}
+            <h2
+              style={{
+                paddingRight:
+                  "3rem",
+              }}
+            >
+              {
+                selectedMessage.subject
+              }
             </h2>
 
-            <p>
-              <strong>From:</strong>{" "}
-              {selectedMessage.name}
-            </p>
 
-            <p>
-              <strong>Email:</strong>{" "}
-              {selectedMessage.email}
-            </p>
+            <div
+              style={{
+                display:
+                  "grid",
 
-            <p>
-              <strong>Received:</strong>{" "}
-              {formatDate(
-                selectedMessage.createdAt
-              )}
-            </p>
+                gap:
+                  "0.55rem",
 
-            <p>
-              <strong>Status:</strong>{" "}
-              {selectedMessage.status}
-            </p>
+                marginTop:
+                  "1rem",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                }}
+              >
+                <strong>
+                  From:
+                </strong>{" "}
+                {
+                  selectedMessage.name
+                }
+              </p>
 
-            <hr />
+              <p
+                style={{
+                  margin: 0,
+                }}
+              >
+                <strong>
+                  Email:
+                </strong>{" "}
+                {
+                  selectedMessage.email
+                }
+              </p>
+
+              <p
+                style={{
+                  margin: 0,
+                }}
+              >
+                <strong>
+                  Received:
+                </strong>{" "}
+                {formatDate(
+                  selectedMessage.createdAt
+                )}
+              </p>
+
+              <div
+                style={{
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "center",
+
+                  gap:
+                    "0.6rem",
+                }}
+              >
+                <strong>
+                  Status:
+                </strong>
+
+                <StatusBadge
+                  status={
+                    selectedMessage.status
+                  }
+                />
+              </div>
+            </div>
+
+
+            <hr
+              style={{
+                margin:
+                  "1.5rem 0",
+              }}
+            />
+
 
             {/* CUSTOMER MESSAGE */}
             <div
               style={{
-                marginTop: "1.5rem",
-                marginBottom: "2rem",
+                marginBottom:
+                  "2rem",
               }}
             >
               <span className="eyebrow">
@@ -505,34 +1116,58 @@ export default function AdminMessages() {
 
               <p
                 style={{
-                  whiteSpace: "pre-wrap",
-                  lineHeight: "1.7",
-                  marginTop: "0.5rem",
+                  whiteSpace:
+                    "pre-wrap",
+
+                  lineHeight:
+                    "1.7",
+
+                  marginTop:
+                    "0.5rem",
                 }}
               >
-                {selectedMessage.message}
+                {
+                  selectedMessage.message
+                }
               </p>
             </div>
+
 
             {/* REPLY HISTORY */}
             <div
               style={{
-                marginBottom: "2rem",
+                marginBottom:
+                  "2rem",
               }}
             >
-              <h3>Reply History</h3>
+              <h3>
+                Reply History
+              </h3>
 
-              {selectedMessage.replies?.length >
+              {selectedMessage.replies
+                ?.length >
               0 ? (
                 selectedMessage.replies.map(
                   (reply) => (
                     <div
-                      key={reply.id}
+                      key={
+                        reply.id
+                      }
                       style={{
-                        padding: "1rem",
-                        marginTop: "1rem",
-                        border: "1px solid #ddd",
-                        borderRadius: "12px",
+                        padding:
+                          "1rem",
+
+                        marginTop:
+                          "1rem",
+
+                        border:
+                          "1px solid var(--line)",
+
+                        borderRadius:
+                          "14px",
+
+                        background:
+                          "rgba(18, 184, 199, 0.035)",
                       }}
                     >
                       <strong>
@@ -541,15 +1176,24 @@ export default function AdminMessages() {
 
                       <p
                         style={{
-                          whiteSpace: "pre-wrap",
-                          lineHeight: "1.7",
+                          whiteSpace:
+                            "pre-wrap",
+
+                          lineHeight:
+                            "1.7",
                         }}
                       >
-                        {reply.replyMessage}
+                        {
+                          reply.replyMessage
+                        }
                       </p>
 
                       <small>
-                        Sent to {reply.sentTo} ·{" "}
+                        Sent to{" "}
+                        {
+                          reply.sentTo
+                        }{" "}
+                        ·{" "}
                         {formatDate(
                           reply.createdAt
                         )}
@@ -558,77 +1202,144 @@ export default function AdminMessages() {
                   )
                 )
               ) : (
-                <p>
-                  No replies sent yet.
+                <p
+                  style={{
+                    color:
+                      "var(--ink-soft)",
+                  }}
+                >
+                  No replies sent
+                  yet.
                 </p>
               )}
             </div>
 
+
             <hr />
+
 
             {/* REPLY FORM */}
             <form
-              onSubmit={handleSendReply}
+              onSubmit={
+                handleSendReply
+              }
               style={{
-                marginTop: "2rem",
+                marginTop:
+                  "2rem",
               }}
             >
-              <h3>Reply to Customer</h3>
+              <h3>
+                Reply to Customer
+              </h3>
 
               <p>
                 Replying to{" "}
                 <strong>
-                  {selectedMessage.email}
+                  {
+                    selectedMessage.email
+                  }
                 </strong>
               </p>
 
               <textarea
                 rows="7"
-                value={replyMessage}
-                onChange={(event) => {
+                value={
+                  replyMessage
+                }
+                onChange={(
+                  event
+                ) => {
                   setReplyMessage(
                     event.target.value
                   );
 
-                  setReplyError("");
-                  setReplySuccess("");
+                  setReplyError(
+                    ""
+                  );
+
+                  setReplySuccess(
+                    ""
+                  );
                 }}
                 placeholder="Write your reply here..."
-                disabled={sendingReply}
+                disabled={
+                  sendingReply
+                }
                 style={{
-                  width: "100%",
-                  padding: "1rem",
-                  marginTop: "0.75rem",
-                  resize: "vertical",
+                  width:
+                    "100%",
+
+                  padding:
+                    "1rem",
+
+                  marginTop:
+                    "0.75rem",
+
+                  resize:
+                    "vertical",
+
+                  border:
+                    "1px solid var(--line)",
+
+                  borderRadius:
+                    "12px",
+
+                  font:
+                    "inherit",
                 }}
               />
+
 
               {replyError && (
                 <p
                   style={{
-                    marginTop: "0.75rem",
+                    marginTop:
+                      "0.75rem",
+
+                    color:
+                      "#a11",
+
+                    fontWeight:
+                      600,
                   }}
                 >
-                  Error: {replyError}
+                  Error:{" "}
+                  {
+                    replyError
+                  }
                 </p>
               )}
+
 
               {replySuccess && (
                 <p
                   style={{
-                    marginTop: "0.75rem",
+                    marginTop:
+                      "0.75rem",
+
+                    color:
+                      "#14783a",
+
+                    fontWeight:
+                      700,
                   }}
                 >
-                  {replySuccess}
+                  {
+                    replySuccess
+                  }
                 </p>
               )}
+
 
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={sendingReply}
+                disabled={
+                  sendingReply
+                }
                 style={{
-                  marginTop: "1rem",
+                  marginTop:
+                    "1rem",
                 }}
               >
                 {sendingReply
@@ -637,54 +1348,52 @@ export default function AdminMessages() {
               </button>
             </form>
 
+
             <hr
               style={{
-                marginTop: "2rem",
+                marginTop:
+                  "2rem",
               }}
             />
+
 
             {/* MANUAL STATUS */}
             <div
               style={{
-                marginTop: "1.5rem",
+                marginTop:
+                  "1.5rem",
               }}
             >
-              <label>
-                <strong>
-                  Message Status
-                </strong>
+              <strong
+                style={{
+                  display:
+                    "block",
 
-                <br />
+                  marginBottom:
+                    "0.65rem",
+                }}
+              >
+                Message Status
+              </strong>
 
-                <select
-                  value={
-                    selectedMessage.status
-                  }
-                  disabled={
-                    updatingId ===
-                    selectedMessage.id
-                  }
-                  onChange={(event) =>
-                    handleStatusChange(
-                      selectedMessage.id,
-                      event.target.value
-                    )
-                  }
-                  style={{
-                    marginTop: "0.5rem",
-                    padding: "0.7rem",
-                  }}
-                >
-                  {STATUSES.map((status) => (
-                    <option
-                      key={status}
-                      value={status}
-                    >
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <StatusSelect
+                value={
+                  selectedMessage.status
+                }
+                disabled={
+                  updatingId ===
+                  selectedMessage.id
+                }
+                onChange={(
+                  event
+                ) =>
+                  handleStatusChange(
+                    selectedMessage.id,
+                    event.target
+                      .value
+                  )
+                }
+              />
             </div>
           </div>
         </div>

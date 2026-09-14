@@ -12,44 +12,39 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  async function loadProfile(currentUser) {
-    if (!currentUser) {
-      setProfile(null);
-      return;
-    }
+  const [authLoading, setAuthLoading] =
+    useState(true);
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", currentUser.id)
-      .single();
-
-    if (error) {
-      console.error("Unable to load profile:", error);
-      setProfile(null);
-      return;
-    }
-
-    setProfile(data);
-  }
+  const [profileLoading, setProfileLoading] =
+    useState(false);
 
   useEffect(() => {
+    let active = true;
+
     async function initializeAuth() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      const currentUser = session?.user || null;
+        if (!active) return;
 
-      setUser(currentUser);
+        setUser(session?.user || null);
+      } catch (error) {
+        console.error(
+          "Unable to initialize auth:",
+          error
+        );
 
-      if (currentUser) {
-        await loadProfile(currentUser);
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
       }
-
-      setLoading(false);
     }
 
     initializeAuth();
@@ -57,32 +52,93 @@ export function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user || null;
+      (_event, session) => {
+        if (!active) return;
 
-        setUser(currentUser);
-
-        if (currentUser) {
-          await loadProfile(currentUser);
-        } else {
-          setProfile(null);
-        }
-
-        setLoading(false);
+        setUser(session?.user || null);
+        setAuthLoading(false);
       }
     );
 
     return () => {
+      active = false;
       subscription.unsubscribe();
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfile() {
+      if (!user) {
+        setProfile(null);
+        setProfileLoading(false);
+        return;
+      }
+
+      try {
+        setProfileLoading(true);
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (!active) return;
+
+        if (error) {
+          console.error(
+            "Unable to load profile:",
+            error
+          );
+
+          setProfile(null);
+          return;
+        }
+
+        setProfile(data);
+      } catch (error) {
+        if (!active) return;
+
+        console.error(
+          "Unable to load profile:",
+          error
+        );
+
+        setProfile(null);
+      } finally {
+        if (active) {
+          setProfileLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
   async function signOut() {
-    await supabase.auth.signOut();
+    const { error } =
+      await supabase.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
   }
 
-  const isAdmin = profile?.role === "admin";
-  const isClient = profile?.role === "client";
+  const loading =
+    authLoading ||
+    profileLoading;
+
+  const isAdmin =
+    profile?.role === "admin";
+
+  const isClient =
+    profile?.role === "client";
 
   return (
     <AuthContext.Provider
@@ -101,7 +157,8 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(

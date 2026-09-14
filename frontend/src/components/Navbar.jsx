@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X, Compass } from "lucide-react";
+import {
+  Menu,
+  X,
+  Compass,
+  UserRound,
+} from "lucide-react";
 
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
@@ -25,21 +30,7 @@ export default function Navbar() {
     profile,
     isAdmin,
     loading,
-    signOut,
   } = useAuth();
-
-  async function handleLogout() {
-    const confirmed = window.confirm(
-      "Are you sure you want to log out?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    await signOut();
-    setOpen(false);
-  }
 
   return (
     <header className="navbar">
@@ -55,7 +46,9 @@ export default function Navbar() {
 
         <nav
           aria-label="Primary navigation"
-          className={`navbar__links ${open ? "is-open" : ""}`}
+          className={`navbar__links ${
+            open ? "is-open" : ""
+          }`}
         >
           {links.map((link) => (
             <NavLink
@@ -131,26 +124,28 @@ export default function Navbar() {
             </>
           )}
 
-          {!loading && user && !isAdmin && (
-            <span className="navbar__link">
-              {profile?.full_name || "My Account"}
-            </span>
-          )}
-
           {!loading && user && (
-            <button
-              type="button"
-              className="navbar__link"
-              onClick={handleLogout}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                font: "inherit",
-              }}
+            <NavLink
+              to="/account"
+              className={({ isActive }) =>
+                "navbar__link" +
+                (isActive ? " is-active" : "")
+              }
+              onClick={() => setOpen(false)}
+              title="My Account"
             >
-              Log Out
-            </button>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+              >
+                <UserRound size={17} />
+
+                {profile?.full_name || "My Account"}
+              </span>
+            </NavLink>
           )}
 
           <NavLink
@@ -164,11 +159,19 @@ export default function Navbar() {
 
         <button
           className="navbar__toggle"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={
+            open ? "Close menu" : "Open menu"
+          }
           aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
+          onClick={() =>
+            setOpen((current) => !current)
+          }
         >
-          {open ? <X size={24} /> : <Menu size={24} />}
+          {open ? (
+            <X size={24} />
+          ) : (
+            <Menu size={24} />
+          )}
         </button>
       </div>
     </header>

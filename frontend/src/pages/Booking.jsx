@@ -15,17 +15,28 @@ import {
   Copy,
   ShieldCheck,
   Sparkles,
+  TicketPercent,
   UtensilsCrossed,
   Users,
 } from "lucide-react";
+
 import { useTrip } from "../context/TripContext";
 import { getTourById } from "../data/tours";
-import { createBooking } from "../services/api";
+import {
+  createBooking,
+  getMyVouchers,
+} from "../services/api";
+
 import "./Booking.css";
 
-const DRAFT_KEY = "addyventure-booking-draft-v1";
-const STEP_KEY = "addyventure-booking-step-v1";
-const CONFIRMATION_KEY = "addyventure-booking-confirmation-v1";
+const DRAFT_KEY =
+  "addyventure-booking-draft-v1";
+
+const STEP_KEY =
+  "addyventure-booking-step-v1";
+
+const CONFIRMATION_KEY =
+  "addyventure-booking-confirmation-v1";
 
 const emptyTraveler = {
   name: "",
@@ -41,10 +52,18 @@ const emptyTraveler = {
   specialRequests: "",
 };
 
-function loadJson(storage, key, fallback) {
+function loadJson(
+  storage,
+  key,
+  fallback
+) {
   try {
-    const value = storage.getItem(key);
-    return value ? JSON.parse(value) : fallback;
+    const value =
+      storage.getItem(key);
+
+    return value
+      ? JSON.parse(value)
+      : fallback;
   } catch {
     return fallback;
   }
@@ -54,20 +73,43 @@ function normalizeTraveler(raw) {
   return {
     ...emptyTraveler,
     ...(raw || {}),
-    adults: Math.max(1, Number(raw?.adults) || 1),
-    children: Math.max(0, Number(raw?.children) || 0),
-    infants: Math.max(0, Number(raw?.infants) || 0),
+
+    adults: Math.max(
+      1,
+      Number(raw?.adults) || 1
+    ),
+
+    children: Math.max(
+      0,
+      Number(raw?.children) || 0
+    ),
+
+    infants: Math.max(
+      0,
+      Number(raw?.infants) || 0
+    ),
   };
 }
 
-function loadTraveler(tripSessionId) {
-  const raw = loadJson(localStorage, DRAFT_KEY, null);
+function loadTraveler(
+  tripSessionId
+) {
+  const raw = loadJson(
+    localStorage,
+    DRAFT_KEY,
+    null
+  );
 
-  if (!raw) return emptyTraveler;
+  if (!raw) {
+    return emptyTraveler;
+  }
 
   if (raw.traveler) {
-    return raw.tripSessionId === tripSessionId
-      ? normalizeTraveler(raw.traveler)
+    return raw.tripSessionId ===
+      tripSessionId
+      ? normalizeTraveler(
+          raw.traveler
+        )
       : emptyTraveler;
   }
 
@@ -77,15 +119,25 @@ function loadTraveler(tripSessionId) {
   });
 }
 
-function loadStep(tripSessionId) {
+function loadStep(
+  tripSessionId
+) {
   try {
-    const raw = localStorage.getItem(STEP_KEY);
+    const raw =
+      localStorage.getItem(
+        STEP_KEY
+      );
 
-    if (!raw) return 1;
+    if (!raw) {
+      return 1;
+    }
 
-    const saved = JSON.parse(raw);
+    const saved =
+      JSON.parse(raw);
 
-    return saved?.tripSessionId === tripSessionId && saved?.step === 2
+    return saved?.tripSessionId ===
+      tripSessionId &&
+      saved?.step === 2
       ? 2
       : 1;
   } catch {
@@ -94,192 +146,522 @@ function loadStep(tripSessionId) {
 }
 
 function loadConfirmation() {
-  return loadJson(sessionStorage, CONFIRMATION_KEY, null);
+  return loadJson(
+    sessionStorage,
+    CONFIRMATION_KEY,
+    null
+  );
 }
 
-function getLocalDateValue(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+function getLocalDateValue(
+  date = new Date()
+) {
+  const year =
+    date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
 function formatDate(value) {
-  if (!value) return "Not selected";
+  if (!value) {
+    return "Not selected";
+  }
 
-  const [year, month, day] = value.split("-").map(Number);
+  const [
+    year,
+    month,
+    day,
+  ] = value
+    .split("-")
+    .map(Number);
 
-  return new Intl.DateTimeFormat("en-PH", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(year, month - 1, day));
+  return new Intl.DateTimeFormat(
+    "en-PH",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+  ).format(
+    new Date(
+      year,
+      month - 1,
+      day
+    )
+  );
 }
 
-function addDaysToDateValue(value, daysToAdd) {
-  if (!value) return "";
+function addDaysToDateValue(
+  value,
+  daysToAdd
+) {
+  if (!value) {
+    return "";
+  }
 
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
+  const [
+    year,
+    month,
+    day,
+  ] = value
+    .split("-")
+    .map(Number);
 
-  date.setDate(date.getDate() + daysToAdd);
+  const date = new Date(
+    year,
+    month - 1,
+    day
+  );
 
-  return getLocalDateValue(date);
+  date.setDate(
+    date.getDate() +
+      daysToAdd
+  );
+
+  return getLocalDateValue(
+    date
+  );
 }
 
-function getTripEndDate(startDate, dayCount) {
-  if (!startDate || dayCount < 1) return "";
+function getTripEndDate(
+  startDate,
+  dayCount
+) {
+  if (
+    !startDate ||
+    dayCount < 1
+  ) {
+    return "";
+  }
 
-  return addDaysToDateValue(startDate, dayCount - 1);
+  return addDaysToDateValue(
+    startDate,
+    dayCount - 1
+  );
 }
 
-function formatTripDuration(dayCount) {
-  const days = Math.max(0, Number(dayCount) || 0);
-  const nights = Math.max(0, days - 1);
+function formatTripDuration(
+  dayCount
+) {
+  const days = Math.max(
+    0,
+    Number(dayCount) || 0
+  );
 
-  return `${days} ${days === 1 ? "Day" : "Days"} / ${nights} ${
-    nights === 1 ? "Night" : "Nights"
+  const nights = Math.max(
+    0,
+    days - 1
+  );
+
+  return `${days} ${
+    days === 1
+      ? "Day"
+      : "Days"
+  } / ${nights} ${
+    nights === 1
+      ? "Night"
+      : "Nights"
   }`;
 }
 
-function formatDateRange(startDate, endDate) {
-  if (!startDate) return "Not selected";
-
-  if (!endDate || startDate === endDate) {
-    return formatDate(startDate);
+function formatDateRange(
+  startDate,
+  endDate
+) {
+  if (!startDate) {
+    return "Not selected";
   }
 
-  return `${formatDate(startDate)} – ${formatDate(endDate)}`;
+  if (
+    !endDate ||
+    startDate === endDate
+  ) {
+    return formatDate(
+      startDate
+    );
+  }
+
+  return `${formatDate(
+    startDate
+  )} – ${formatDate(
+    endDate
+  )}`;
 }
 
-function getDestinationSummary(tripPlan) {
-  const titles = tripPlan.days.flatMap((day) =>
-    day.items.map((item) => item.title)
-  );
+function getDestinationSummary(
+  tripPlan
+) {
+  const titles =
+    tripPlan.days.flatMap(
+      (day) =>
+        day.items.map(
+          (item) =>
+            item.title
+        )
+    );
 
-  return [...new Set(titles)];
+  return [
+    ...new Set(titles),
+  ];
 }
 
 function mealLabel(meals) {
   const included = [];
 
-  if (meals?.breakfast) included.push("Breakfast");
-  if (meals?.lunch) included.push("Lunch");
-  if (meals?.dinner) included.push("Dinner");
+  if (meals?.breakfast) {
+    included.push(
+      "Breakfast"
+    );
+  }
 
-  return included.length ? included.join(", ") : "No meals selected";
+  if (meals?.lunch) {
+    included.push("Lunch");
+  }
+
+  if (meals?.dinner) {
+    included.push("Dinner");
+  }
+
+  return included.length
+    ? included.join(", ")
+    : "No meals selected";
 }
 
-function countTravelers(traveler) {
+function countTravelers(
+  traveler
+) {
   return (
-    Math.max(0, Number(traveler.adults) || 0) +
-    Math.max(0, Number(traveler.children) || 0) +
-    Math.max(0, Number(traveler.infants) || 0)
+    Math.max(
+      0,
+      Number(
+        traveler.adults
+      ) || 0
+    ) +
+    Math.max(
+      0,
+      Number(
+        traveler.children
+      ) || 0
+    ) +
+    Math.max(
+      0,
+      Number(
+        traveler.infants
+      ) || 0
+    )
   );
 }
 
-function validateTraveler(traveler) {
+function validateTraveler(
+  traveler
+) {
   const errors = {};
-  const totalTravelers = countTravelers(traveler);
 
-  if (!traveler.name.trim()) {
-    errors.name = "Lead traveler name is required.";
+  const totalTravelers =
+    countTravelers(
+      traveler
+    );
+
+  if (
+    !traveler.name.trim()
+  ) {
+    errors.name =
+      "Lead traveler name is required.";
   }
 
-  if (!/^\S+@\S+\.\S+$/.test(traveler.email.trim())) {
-    errors.email = "Enter a valid email address.";
+  if (
+    !/^\S+@\S+\.\S+$/.test(
+      traveler.email.trim()
+    )
+  ) {
+    errors.email =
+      "Enter a valid email address.";
   }
 
-  if (!/^[\d\s()+-]{7,}$/.test(traveler.phone.trim())) {
-    errors.phone = "Enter a valid phone number (at least 7 characters).";
+  if (
+    !/^[\d\s()+-]{7,}$/.test(
+      traveler.phone.trim()
+    )
+  ) {
+    errors.phone =
+      "Enter a valid phone number (at least 7 characters).";
   }
 
-  if (!traveler.travelDate) {
-    errors.travelDate = "Select your trip start date.";
-  } else if (traveler.travelDate < getLocalDateValue()) {
-    errors.travelDate = "Travel date cannot be in the past.";
+  if (
+    !traveler.travelDate
+  ) {
+    errors.travelDate =
+      "Select your trip start date.";
+  } else if (
+    traveler.travelDate <
+    getLocalDateValue()
+  ) {
+    errors.travelDate =
+      "Travel date cannot be in the past.";
   }
 
-  if ((Number(traveler.adults) || 0) < 1) {
-    errors.adults = "At least one adult traveler is required.";
+  if (
+    (Number(
+      traveler.adults
+    ) || 0) < 1
+  ) {
+    errors.adults =
+      "At least one adult traveler is required.";
   }
 
-  if (totalTravelers < 1) {
-    errors.adults = "Add at least one traveler.";
+  if (
+    totalTravelers < 1
+  ) {
+    errors.adults =
+      "Add at least one traveler.";
   }
 
-  const hasEmergencyName = traveler.emergencyName.trim().length > 0;
-  const hasEmergencyPhone = traveler.emergencyPhone.trim().length > 0;
+  const hasEmergencyName =
+    traveler.emergencyName
+      .trim()
+      .length > 0;
 
-  if (hasEmergencyName !== hasEmergencyPhone) {
+  const hasEmergencyPhone =
+    traveler.emergencyPhone
+      .trim()
+      .length > 0;
+
+  if (
+    hasEmergencyName !==
+    hasEmergencyPhone
+  ) {
     errors.emergency =
       "Enter both emergency contact name and phone, or leave both blank.";
   } else if (
     hasEmergencyPhone &&
-    !/^[\d\s()+-]{7,}$/.test(traveler.emergencyPhone.trim())
+    !/^[\d\s()+-]{7,}$/.test(
+      traveler.emergencyPhone.trim()
+    )
   ) {
-    errors.emergency = "Enter a valid emergency contact number.";
+    errors.emergency =
+      "Enter a valid emergency contact number.";
   }
 
   return errors;
 }
 
-function DaySummary({ day, travelDate }) {
+function calculateVoucherDiscount(
+  walletItem,
+  subtotal
+) {
+  const voucher =
+    walletItem?.voucher;
+
+  if (!voucher) {
+    return 0;
+  }
+
+  const minimumSpend =
+    Number(
+      voucher.minimumSpend ||
+        0
+    );
+
+  if (
+    subtotal <
+    minimumSpend
+  ) {
+    return 0;
+  }
+
+  let discount = 0;
+
+  if (
+    voucher.discountType ===
+    "percentage"
+  ) {
+    discount =
+      subtotal *
+      (Number(
+        voucher.discountValue
+      ) /
+        100);
+
+    if (
+      voucher.maximumDiscount !==
+        null &&
+      voucher.maximumDiscount !==
+        undefined
+    ) {
+      discount = Math.min(
+        discount,
+        Number(
+          voucher.maximumDiscount
+        )
+      );
+    }
+  }
+
+  if (
+    voucher.discountType ===
+    "fixed"
+  ) {
+    discount =
+      Number(
+        voucher.discountValue
+      );
+  }
+
+  discount = Math.min(
+    discount,
+    subtotal
+  );
+
+  return Math.max(
+    0,
+    Math.round(
+      discount * 100
+    ) / 100
+  );
+}
+
+function formatVoucherLabel(
+  walletItem
+) {
+  const voucher =
+    walletItem?.voucher;
+
+  if (!voucher) {
+    return "Voucher";
+  }
+
+  if (
+    voucher.discountType ===
+    "percentage"
+  ) {
+    return `${voucher.code} — ${Number(
+      voucher.discountValue
+    )}% OFF`;
+  }
+
+  return `${voucher.code} — ₱${Number(
+    voucher.discountValue
+  ).toLocaleString()} OFF`;
+}
+
+function DaySummary({
+  day,
+  travelDate,
+}) {
   return (
     <article className="booking-day">
       <div className="booking-day__heading">
         <span>
           Day {day.dayNumber}
-          {travelDate && <em>{formatDate(travelDate)}</em>}
+
+          {travelDate && (
+            <em>
+              {formatDate(
+                travelDate
+              )}
+            </em>
+          )}
         </span>
 
         <small>
-          {day.items.length} {day.items.length === 1 ? "tour" : "tours"}
+          {day.items.length}{" "}
+          {day.items.length ===
+          1
+            ? "tour"
+            : "tours"}
         </small>
       </div>
 
-      {day.items.length > 0 ? (
+      {day.items.length >
+      0 ? (
         <div className="booking-day__tours">
-          {day.items.map((item, index) => {
-            const tour = getTourById(item.tourId);
+          {day.items.map(
+            (
+              item,
+              index
+            ) => {
+              const tour =
+                getTourById(
+                  item.tourId
+                );
 
-            return (
-              <div
-                className="booking-day__tour"
-                key={`${item.tourId}-${index}`}
-              >
-                <div>
-                  <strong>{item.title}</strong>
+              return (
+                <div
+                  className="booking-day__tour"
+                  key={`${item.tourId}-${index}`}
+                >
+                  <div>
+                    <strong>
+                      {
+                        item.title
+                      }
+                    </strong>
+
+                    {tour && (
+                      <span>
+                        <MapPin
+                          size={
+                            13
+                          }
+                        />{" "}
+                        {
+                          tour.region
+                        }
+                      </span>
+                    )}
+                  </div>
 
                   {tour && (
-                    <span>
-                      <MapPin size={13} /> {tour.region}
-                    </span>
+                    <b>
+                      ₱
+                      {tour.price.toLocaleString()}
+                    </b>
                   )}
                 </div>
-
-                {tour && <b>₱{tour.price.toLocaleString()}</b>}
-              </div>
-            );
-          })}
+              );
+            }
+          )}
         </div>
       ) : (
         <p className="booking-day__empty">
-          No tour scheduled for this day.
+          No tour scheduled
+          for this day.
         </p>
       )}
 
       <div className="booking-day__extras">
         <span>
-          <UtensilsCrossed size={15} /> {mealLabel(day.meals)}
+          <UtensilsCrossed
+            size={15}
+          />{" "}
+          {mealLabel(
+            day.meals
+          )}
         </span>
 
         <span>
-          <BedDouble size={15} />{" "}
-          {day.accommodation?.name
-            ? `${day.accommodation.name}${
-                day.accommodation.location
+          <BedDouble
+            size={15}
+          />{" "}
+          {day
+            .accommodation
+            ?.name
+            ? `${
+                day
+                  .accommodation
+                  .name
+              }${
+                day
+                  .accommodation
+                  .location
                   ? ` · ${day.accommodation.location}`
                   : ""
               }`
@@ -288,18 +670,22 @@ function DaySummary({ day, travelDate }) {
 
         <span>
           <Car size={15} />{" "}
-          {day.transportation || "No transportation set"}
+          {day.transportation ||
+            "No transportation set"}
         </span>
       </div>
     </article>
   );
 }
 
-function StepIndicator({ step }) {
+function StepIndicator({
+  step,
+}) {
   const steps = [
     {
       number: 1,
-      label: "Traveler details",
+      label:
+        "Traveler details",
     },
     {
       number: 2,
@@ -307,28 +693,62 @@ function StepIndicator({ step }) {
     },
     {
       number: 3,
-      label: "Request received",
+      label:
+        "Request received",
     },
   ];
 
   return (
-    <div className="booking-steps" aria-label="Booking progress">
-      {steps.map((item) => {
-        const isDone = item.number < step;
-        const isActive = item.number === step;
+    <div
+      className="booking-steps"
+      aria-label="Booking progress"
+    >
+      {steps.map(
+        (item) => {
+          const isDone =
+            item.number <
+            step;
 
-        return (
-          <div
-            className={`booking-step ${isDone ? "is-done" : ""} ${
-              isActive ? "is-active" : ""
-            }`}
-            key={item.number}
-          >
-            <span>{isDone ? <Check size={15} /> : item.number}</span>
-            <small>{item.label}</small>
-          </div>
-        );
-      })}
+          const isActive =
+            item.number ===
+            step;
+
+          return (
+            <div
+              className={`booking-step ${
+                isDone
+                  ? "is-done"
+                  : ""
+              } ${
+                isActive
+                  ? "is-active"
+                  : ""
+              }`}
+              key={
+                item.number
+              }
+            >
+              <span>
+                {isDone ? (
+                  <Check
+                    size={
+                      15
+                    }
+                  />
+                ) : (
+                  item.number
+                )}
+              </span>
+
+              <small>
+                {
+                  item.label
+                }
+              </small>
+            </div>
+          );
+        }
+      )}
     </div>
   );
 }
@@ -342,42 +762,264 @@ export default function Booking() {
     clearTrip,
   } = useTrip();
 
-  const [traveler, setTraveler] = useState(() =>
-    loadTraveler(tripSessionId)
+  const [
+    traveler,
+    setTraveler,
+  ] = useState(() =>
+    loadTraveler(
+      tripSessionId
+    )
   );
 
-  const [step, setStep] = useState(() =>
-    loadStep(tripSessionId)
+  const [
+    step,
+    setStep,
+  ] = useState(() =>
+    loadStep(
+      tripSessionId
+    )
   );
 
-  const [errors, setErrors] = useState({});
-  const [confirmation, setConfirmation] = useState(loadConfirmation);
-  const [copiedReference, setCopiedReference] = useState(false);
+  const [
+    errors,
+    setErrors,
+  ] = useState({});
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-
-  const totalTravelers = useMemo(
-    () => countTravelers(traveler),
-    [traveler]
+  const [
+    confirmation,
+    setConfirmation,
+  ] = useState(
+    loadConfirmation
   );
 
-  const estimatedTotal = totalPrice * totalTravelers;
+  const [
+    copiedReference,
+    setCopiedReference,
+  ] = useState(false);
 
-  const tripDayCount = tripPlan.days.length;
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
 
-  const tripEndDate = getTripEndDate(
-    traveler.travelDate,
-    tripDayCount
-  );
+  const [
+    submitError,
+    setSubmitError,
+  ] = useState("");
 
-  const tripDuration = formatTripDuration(tripDayCount);
+  const [
+    vouchers,
+    setVouchers,
+  ] = useState([]);
+
+  const [
+    vouchersLoading,
+    setVouchersLoading,
+  ] = useState(true);
+
+  const [
+    voucherLoadError,
+    setVoucherLoadError,
+  ] = useState("");
+
+  const [
+    selectedVoucherId,
+    setSelectedVoucherId,
+  ] = useState("");
+
+  const [
+    appliedVoucherId,
+    setAppliedVoucherId,
+  ] = useState("");
+
+  const [
+    voucherMessage,
+    setVoucherMessage,
+  ] = useState("");
+
+  const totalTravelers =
+    useMemo(
+      () =>
+        countTravelers(
+          traveler
+        ),
+      [traveler]
+    );
+
+  const subtotal =
+    totalPrice *
+    totalTravelers;
+
+  const availableVouchers =
+    useMemo(() => {
+      const now =
+        new Date();
+
+      return vouchers.filter(
+        (item) => {
+          const voucher =
+            item.voucher;
+
+          if (
+            !voucher ||
+            item.status !==
+              "available"
+          ) {
+            return false;
+          }
+
+          if (
+            voucher.active ===
+            false
+          ) {
+            return false;
+          }
+
+          if (
+            voucher.validFrom &&
+            new Date(
+              voucher.validFrom
+            ) > now
+          ) {
+            return false;
+          }
+
+          if (
+            voucher.validUntil &&
+            new Date(
+              voucher.validUntil
+            ) < now
+          ) {
+            return false;
+          }
+
+          return true;
+        }
+      );
+    }, [vouchers]);
+
+  const selectedVoucher =
+    useMemo(
+      () =>
+        availableVouchers.find(
+          (item) =>
+            String(
+              item.id
+            ) ===
+            String(
+              selectedVoucherId
+            )
+        ) || null,
+      [
+        availableVouchers,
+        selectedVoucherId,
+      ]
+    );
+
+  const appliedVoucher =
+    useMemo(
+      () =>
+        availableVouchers.find(
+          (item) =>
+            String(
+              item.id
+            ) ===
+            String(
+              appliedVoucherId
+            )
+        ) || null,
+      [
+        availableVouchers,
+        appliedVoucherId,
+      ]
+    );
+
+  const discountAmount =
+    useMemo(
+      () =>
+        calculateVoucherDiscount(
+          appliedVoucher,
+          subtotal
+        ),
+      [
+        appliedVoucher,
+        subtotal,
+      ]
+    );
+
+  const estimatedTotal =
+    Math.max(
+      0,
+      Math.round(
+        (subtotal -
+          discountAmount) *
+          100
+      ) / 100
+    );
+
+  const tripDayCount =
+    tripPlan.days.length;
+
+  const tripEndDate =
+    getTripEndDate(
+      traveler.travelDate,
+      tripDayCount
+    );
+
+  const tripDuration =
+    formatTripDuration(
+      tripDayCount
+    );
 
   const displayConfirmation =
-    confirmation && totalItems === 0;
+    confirmation &&
+    totalItems === 0;
 
   useEffect(() => {
-    if (step >= 3 || totalItems === 0) return;
+    async function loadVouchers() {
+      try {
+        setVouchersLoading(
+          true
+        );
+
+        setVoucherLoadError(
+          ""
+        );
+
+        const data =
+          await getMyVouchers();
+
+        setVouchers(
+          data.vouchers ||
+            []
+        );
+      } catch (error) {
+        console.error(
+          "Unable to load vouchers:",
+          error
+        );
+
+        setVoucherLoadError(
+          error.message ||
+            "Unable to load vouchers."
+        );
+      } finally {
+        setVouchersLoading(
+          false
+        );
+      }
+    }
+
+    loadVouchers();
+  }, []);
+
+  useEffect(() => {
+    if (
+      step >= 3 ||
+      totalItems === 0
+    ) {
+      return;
+    }
 
     try {
       localStorage.setItem(
@@ -417,59 +1059,96 @@ export default function Booking() {
   ]);
 
   useEffect(() => {
-    if (!displayConfirmation) return undefined;
+    if (
+      !displayConfirmation
+    ) {
+      return undefined;
+    }
 
     const previousOverflow =
-      document.body.style.overflow;
+      document.body.style
+        .overflow;
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+      "hidden";
 
     return () => {
       document.body.style.overflow =
         previousOverflow;
     };
-  }, [displayConfirmation]);
+  }, [
+    displayConfirmation,
+  ]);
 
-  const updateField = (field, value) => {
-    setTraveler((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+  const updateField = (
+    field,
+    value
+  ) => {
+    setTraveler(
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      })
+    );
 
-    setErrors((previous) => ({
-      ...previous,
-      [field]: undefined,
-      emergency: undefined,
-    }));
+    setErrors(
+      (previous) => ({
+        ...previous,
+        [field]: undefined,
+        emergency:
+          undefined,
+      })
+    );
 
     setSubmitError("");
   };
 
-  const handleTravelerCount = (field, value) => {
+  const handleTravelerCount = (
+    field,
+    value
+  ) => {
     const minimum =
-      field === "adults" ? 1 : 0;
+      field === "adults"
+        ? 1
+        : 0;
 
     const parsed =
-      Number.parseInt(value, 10);
+      Number.parseInt(
+        value,
+        10
+      );
 
     updateField(
       field,
-      Number.isFinite(parsed)
-        ? Math.max(minimum, parsed)
+      Number.isFinite(
+        parsed
+      )
+        ? Math.max(
+            minimum,
+            parsed
+          )
         : minimum
     );
   };
 
-  const handleContinue = (event) => {
+  const handleContinue = (
+    event
+  ) => {
     event.preventDefault();
 
     const nextErrors =
-      validateTraveler(traveler);
+      validateTraveler(
+        traveler
+      );
 
     if (
-      Object.keys(nextErrors).length > 0
+      Object.keys(
+        nextErrors
+      ).length > 0
     ) {
-      setErrors(nextErrors);
+      setErrors(
+        nextErrors
+      );
 
       const firstInvalid =
         document.querySelector(
@@ -491,62 +1170,119 @@ export default function Booking() {
     });
   };
 
-  const handleConfirm = async () => {
-    if (isSubmitting) return;
+  const handleApplyVoucher =
+    () => {
+      setVoucherMessage("");
 
-    setIsSubmitting(true);
-    setSubmitError("");
+      if (
+        !selectedVoucher
+      ) {
+        setVoucherMessage(
+          "Choose a voucher first."
+        );
 
-    const bookingData = {
-      travelerName: traveler.name,
-      email: traveler.email,
-      phone: traveler.phone,
-      nationality: traveler.nationality,
+        return;
+      }
 
-      travelDate: traveler.travelDate,
+      const minimumSpend =
+        Number(
+          selectedVoucher
+            .voucher
+            ?.minimumSpend ||
+            0
+        );
 
-      traveler: {
-        ...traveler,
-      },
+      if (
+        subtotal <
+        minimumSpend
+      ) {
+        setVoucherMessage(
+          `This voucher requires a minimum subtotal of ₱${minimumSpend.toLocaleString()}.`
+        );
 
-      tripPlan: JSON.parse(
-        JSON.stringify(tripPlan)
-      ),
+        return;
+      }
 
-      travelEndDate: tripEndDate,
-      tripDays: tripDayCount,
+      const previewDiscount =
+        calculateVoucherDiscount(
+          selectedVoucher,
+          subtotal
+        );
 
-      tripNights: Math.max(
-        0,
-        tripDayCount - 1
-      ),
+      if (
+        previewDiscount <= 0
+      ) {
+        setVoucherMessage(
+          "This voucher cannot be applied to this booking."
+        );
 
-      pricePerTraveler: totalPrice,
-      travelerCount: totalTravelers,
-      estimatedTotal,
+        return;
+      }
+
+      setAppliedVoucherId(
+        selectedVoucher.id
+      );
+
+      setVoucherMessage(
+        `${selectedVoucher.voucher.code} applied.`
+      );
     };
 
-    try {
-      const result =
-        await createBooking(bookingData);
+  const handleRemoveVoucher =
+    () => {
+      setAppliedVoucherId(
+        ""
+      );
 
-      const booking = {
-        reference:
-          result.booking.bookingReference,
+      setSelectedVoucherId(
+        ""
+      );
 
-        createdAt:
-          result.booking.createdAt,
+      setVoucherMessage(
+        "Voucher removed."
+      );
+    };
 
-        status:
-          result.booking.status,
+  const handleConfirm =
+    async () => {
+      if (
+        isSubmitting
+      ) {
+        return;
+      }
+
+      setIsSubmitting(
+        true
+      );
+
+      setSubmitError("");
+
+      const bookingData = {
+        travelerName:
+          traveler.name,
+
+        email:
+          traveler.email,
+
+        phone:
+          traveler.phone,
+
+        nationality:
+          traveler.nationality,
+
+        travelDate:
+          traveler.travelDate,
 
         traveler: {
           ...traveler,
         },
 
-        tripPlan: JSON.parse(
-          JSON.stringify(tripPlan)
-        ),
+        tripPlan:
+          JSON.parse(
+            JSON.stringify(
+              tripPlan
+            )
+          ),
 
         travelEndDate:
           tripEndDate,
@@ -554,10 +1290,12 @@ export default function Booking() {
         tripDays:
           tripDayCount,
 
-        tripNights: Math.max(
-          0,
-          tripDayCount - 1
-        ),
+        tripNights:
+          Math.max(
+            0,
+            tripDayCount -
+              1
+          ),
 
         pricePerTraveler:
           totalPrice,
@@ -565,16 +1303,140 @@ export default function Booking() {
         travelerCount:
           totalTravelers,
 
-        estimatedTotal,
+        userVoucherId:
+          appliedVoucher?.id ||
+          null,
       };
 
-      setConfirmation(booking);
-      setStep(3);
-
       try {
-        sessionStorage.setItem(
-          CONFIRMATION_KEY,
-          JSON.stringify(booking)
+        const result =
+          await createBooking(
+            bookingData
+          );
+
+        const booking = {
+          reference:
+            result.booking
+              .bookingReference,
+
+          createdAt:
+            result.booking
+              .createdAt,
+
+          status:
+            result.booking
+              .status,
+
+          traveler: {
+            ...traveler,
+          },
+
+          tripPlan:
+            JSON.parse(
+              JSON.stringify(
+                tripPlan
+              )
+            ),
+
+          travelEndDate:
+            tripEndDate,
+
+          tripDays:
+            tripDayCount,
+
+          tripNights:
+            Math.max(
+              0,
+              tripDayCount -
+                1
+            ),
+
+          pricePerTraveler:
+            totalPrice,
+
+          travelerCount:
+            totalTravelers,
+
+          subtotal:
+            Number(
+              result.booking
+                .subtotal ??
+                subtotal
+            ),
+
+          discountAmount:
+            Number(
+              result.booking
+                .discountAmount ??
+                0
+            ),
+
+          estimatedTotal:
+            Number(
+              result.booking
+                .estimatedTotal ??
+                subtotal
+            ),
+
+          voucherCode:
+            result.booking
+              .voucherCode ||
+            null,
+        };
+
+        setConfirmation(
+          booking
+        );
+
+        setStep(3);
+
+        try {
+          sessionStorage.setItem(
+            CONFIRMATION_KEY,
+            JSON.stringify(
+              booking
+            )
+          );
+
+          localStorage.removeItem(
+            DRAFT_KEY
+          );
+
+          localStorage.removeItem(
+            STEP_KEY
+          );
+        } catch {
+          // Confirmation still works without storage.
+        }
+
+        clearTrip();
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      } catch (error) {
+        console.error(
+          "Booking request failed:",
+          error
+        );
+
+        setSubmitError(
+          error.message ||
+            "Unable to send booking request. Please try again."
+        );
+      } finally {
+        setIsSubmitting(
+          false
+        );
+      }
+    };
+
+  const startAnotherTrip =
+    () => {
+      try {
+        sessionStorage.removeItem(
+          CONFIRMATION_KEY
         );
 
         localStorage.removeItem(
@@ -585,57 +1447,43 @@ export default function Booking() {
           STEP_KEY
         );
       } catch {
-        // Confirmation still works without storage.
+        // Ignore storage failures.
       }
 
-      clearTrip();
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    } catch (error) {
-      console.error(
-        "Booking request failed:",
-        error
+      setConfirmation(
+        null
       );
 
-      setSubmitError(
-        error.message ||
-          "Unable to send booking request. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const startAnotherTrip = () => {
-    try {
-      sessionStorage.removeItem(
-        CONFIRMATION_KEY
+      setCopiedReference(
+        false
       );
 
-      localStorage.removeItem(
-        DRAFT_KEY
+      setSubmitError("");
+
+      setSelectedVoucherId(
+        ""
       );
 
-      localStorage.removeItem(
-        STEP_KEY
+      setAppliedVoucherId(
+        ""
       );
-    } catch {
-      // Ignore storage failures.
-    }
 
-    setConfirmation(null);
-    setCopiedReference(false);
-    setSubmitError("");
-    setTraveler(emptyTraveler);
-    setStep(1);
-  };
+      setVoucherMessage(
+        ""
+      );
+
+      setTraveler(
+        emptyTraveler
+      );
+
+      setStep(1);
+    };
 
   const copyBookingReference =
     async () => {
-      if (!confirmation?.reference) {
+      if (
+        !confirmation?.reference
+      ) {
         return;
       }
 
@@ -644,7 +1492,9 @@ export default function Booking() {
           confirmation.reference
         );
 
-        setCopiedReference(true);
+        setCopiedReference(
+          true
+        );
       } catch {
         const textarea =
           document.createElement(
@@ -679,23 +1529,30 @@ export default function Booking() {
           textarea
         );
 
-        setCopiedReference(true);
+        setCopiedReference(
+          true
+        );
       }
 
       window.setTimeout(
         () =>
-          setCopiedReference(false),
+          setCopiedReference(
+            false
+          ),
         1800
       );
     };
 
-  if (displayConfirmation) {
+  if (
+    displayConfirmation
+  ) {
     const confirmedTraveler =
       confirmation.traveler;
 
     const confirmedDayCount =
       confirmation.tripDays ||
-      confirmation.tripPlan.days.length;
+      confirmation.tripPlan
+        .days.length;
 
     const confirmedEndDate =
       confirmation.travelEndDate ||
@@ -724,11 +1581,14 @@ export default function Booking() {
             className="booking-receipt__success"
             aria-hidden="true"
           >
-            <CheckCircle2 size={30} />
+            <CheckCircle2
+              size={30}
+            />
           </div>
 
           <span className="booking-receipt__brand">
-            AddyVenture Travel & Tours
+            AddyVenture Travel
+            & Tours
           </span>
 
           <span className="booking-receipt__status">
@@ -736,21 +1596,27 @@ export default function Booking() {
           </span>
 
           <h1 id="booking-receipt-title">
-            Your trip request is on its way.
+            Your trip request is
+            on its way.
           </h1>
 
           <p className="booking-receipt__intro">
-            Screenshot this confirmation and keep
-            your booking code for future reference.
+            Screenshot this
+            confirmation and keep
+            your booking code for
+            future reference.
           </p>
 
           <div className="booking-receipt__code">
             <span>
-              Booking / Traveler Code
+              Booking / Traveler
+              Code
             </span>
 
             <strong>
-              {confirmation.reference}
+              {
+                confirmation.reference
+              }
             </strong>
 
             <button
@@ -759,7 +1625,9 @@ export default function Booking() {
                 copyBookingReference
               }
             >
-              <Copy size={15} />
+              <Copy
+                size={15}
+              />
 
               {copiedReference
                 ? "Copied!"
@@ -769,7 +1637,10 @@ export default function Booking() {
 
           <dl className="booking-receipt__details">
             <div>
-              <dt>Lead traveler</dt>
+              <dt>
+                Lead traveler
+              </dt>
+
               <dd>
                 {
                   confirmedTraveler.name
@@ -778,7 +1649,9 @@ export default function Booking() {
             </div>
 
             <div>
-              <dt>Travel dates</dt>
+              <dt>
+                Travel dates
+              </dt>
 
               <dd>
                 {formatDateRange(
@@ -789,7 +1662,9 @@ export default function Booking() {
             </div>
 
             <div>
-              <dt>Duration</dt>
+              <dt>
+                Duration
+              </dt>
 
               <dd>
                 {formatTripDuration(
@@ -799,7 +1674,9 @@ export default function Booking() {
             </div>
 
             <div>
-              <dt>Travel party</dt>
+              <dt>
+                Travel party
+              </dt>
 
               <dd>
                 {
@@ -812,12 +1689,49 @@ export default function Booking() {
               </dd>
             </div>
 
+            {confirmation.voucherCode && (
+              <div>
+                <dt>
+                  Voucher
+                </dt>
+
+                <dd>
+                  {
+                    confirmation.voucherCode
+                  }
+                </dd>
+              </div>
+            )}
+
+            {Number(
+              confirmation
+                .discountAmount ||
+                0
+            ) > 0 && (
+              <div>
+                <dt>
+                  Discount
+                </dt>
+
+                <dd>
+                  -₱
+                  {Number(
+                    confirmation.discountAmount
+                  ).toLocaleString()}
+                </dd>
+              </div>
+            )}
+
             <div>
-              <dt>Estimated total</dt>
+              <dt>
+                Estimated total
+              </dt>
 
               <dd>
                 ₱
-                {confirmation.estimatedTotal.toLocaleString()}
+                {Number(
+                  confirmation.estimatedTotal
+                ).toLocaleString()}
               </dd>
             </div>
           </dl>
@@ -838,14 +1752,18 @@ export default function Booking() {
           </div>
 
           <div className="booking-receipt__notice">
-            <ShieldCheck size={17} />
+            <ShieldCheck
+              size={17}
+            />
 
             <p>
               No payment has been
-              collected yet. AddyVenture
-              will review availability and
-              contact you before final
-              pricing and payment.
+              collected yet.
+              AddyVenture will
+              review availability
+              and contact you
+              before final pricing
+              and payment.
             </p>
           </div>
 
@@ -863,7 +1781,9 @@ export default function Booking() {
     );
   }
 
-  if (totalItems === 0) {
+  if (
+    totalItems === 0
+  ) {
     return (
       <div className="container booking booking--empty">
         <span className="eyebrow">
@@ -871,13 +1791,15 @@ export default function Booking() {
         </span>
 
         <h1>
-          Build your itinerary first.
+          Build your itinerary
+          first.
         </h1>
 
         <p>
-          Your booking request needs at
-          least one tour. Add destinations
-          to your itinerary, then come
+          Your booking request
+          needs at least one tour.
+          Add destinations to your
+          itinerary, then come
           back here to continue.
         </p>
 
@@ -902,12 +1824,15 @@ export default function Booking() {
 
   return (
     <div className="container booking">
-      <StepIndicator step={step} />
+      <StepIndicator
+        step={step}
+      />
 
       <div className="booking-heading">
         <div>
           <span className="eyebrow">
-            Phase 4 · Booking request
+            Phase 4 · Booking
+            request
           </span>
 
           <h1>
@@ -919,15 +1844,18 @@ export default function Booking() {
           <p>
             {step === 1
               ? "Your itinerary is saved while you complete these details, so you can safely go back and edit it anytime."
-              : "Check the traveler details, itinerary, and estimated price before sending your request."}
+              : "Check the traveler details, itinerary, voucher, and estimated price before sending your request."}
           </p>
         </div>
 
         <div className="booking-heading__seal">
-          <ShieldCheck size={18} />
+          <ShieldCheck
+            size={18}
+          />
 
           <span>
-            No payment at this stage
+            No payment at this
+            stage
           </span>
         </div>
       </div>
@@ -953,8 +1881,9 @@ export default function Booking() {
                   </h2>
 
                   <p>
-                    We’ll use these details
-                    for trip coordination.
+                    We’ll use these
+                    details for trip
+                    coordination.
                   </p>
                 </div>
               </div>
@@ -968,7 +1897,8 @@ export default function Booking() {
                   }`}
                 >
                   <span>
-                    Full name <b>*</b>
+                    Full name{" "}
+                    <b>*</b>
                   </span>
 
                   <input
@@ -976,10 +1906,13 @@ export default function Booking() {
                     value={
                       traveler.name
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "name",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="e.g. Addy Luy"
@@ -988,7 +1921,9 @@ export default function Booking() {
 
                   {errors.name && (
                     <small>
-                      {errors.name}
+                      {
+                        errors.name
+                      }
                     </small>
                   )}
                 </label>
@@ -1001,7 +1936,9 @@ export default function Booking() {
                   }`}
                 >
                   <span>
-                    <Mail size={14} />{" "}
+                    <Mail
+                      size={14}
+                    />{" "}
                     Email <b>*</b>
                   </span>
 
@@ -1010,10 +1947,13 @@ export default function Booking() {
                     value={
                       traveler.email
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "email",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="you@example.com"
@@ -1022,7 +1962,9 @@ export default function Booking() {
 
                   {errors.email && (
                     <small>
-                      {errors.email}
+                      {
+                        errors.email
+                      }
                     </small>
                   )}
                 </label>
@@ -1035,8 +1977,11 @@ export default function Booking() {
                   }`}
                 >
                   <span>
-                    <Phone size={14} />{" "}
-                    Mobile number <b>*</b>
+                    <Phone
+                      size={14}
+                    />{" "}
+                    Mobile number{" "}
+                    <b>*</b>
                   </span>
 
                   <input
@@ -1044,10 +1989,13 @@ export default function Booking() {
                     value={
                       traveler.phone
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "phone",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="+63 9XX XXX XXXX"
@@ -1056,7 +2004,9 @@ export default function Booking() {
 
                   {errors.phone && (
                     <small>
-                      {errors.phone}
+                      {
+                        errors.phone
+                      }
                     </small>
                   )}
                 </label>
@@ -1072,7 +2022,8 @@ export default function Booking() {
                     <CalendarDays
                       size={14}
                     />{" "}
-                    Trip start date{" "}
+                    Trip start
+                    date{" "}
                     <b>*</b>
                   </span>
 
@@ -1084,10 +2035,13 @@ export default function Booking() {
                     value={
                       traveler.travelDate
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "travelDate",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                   />
@@ -1111,10 +2065,13 @@ export default function Booking() {
                     value={
                       traveler.nationality
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "nationality",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="e.g. Filipino"
@@ -1136,7 +2093,8 @@ export default function Booking() {
 
                 <div>
                   <span>
-                    Automatic travel
+                    Automatic
+                    travel
                     schedule
                   </span>
 
@@ -1150,21 +2108,30 @@ export default function Booking() {
                       </strong>
 
                       <small>
-                        {tripDuration} ·
-                        Your{" "}
-                        {tripDayCount}-day
+                        {
+                          tripDuration
+                        }{" "}
+                        · Your{" "}
+                        {
+                          tripDayCount
+                        }
+                        -day
                         itinerary
-                        automatically sets
-                        the return date.
+                        automatically
+                        sets the
+                        return
+                        date.
                       </small>
                     </>
                   ) : (
                     <small>
-                      Pick only your start
-                      date. Your itinerary
+                      Pick only your
+                      start date.
+                      Your itinerary
                       automatically
-                      determines the trip
-                      duration and end date.
+                      determines the
+                      trip duration
+                      and end date.
                     </small>
                   )}
                 </div>
@@ -1173,7 +2140,9 @@ export default function Booking() {
 
             <section className="booking-card">
               <div className="booking-card__title">
-                <Users size={20} />
+                <Users
+                  size={20}
+                />
 
                 <div>
                   <h2>
@@ -1181,8 +2150,10 @@ export default function Booking() {
                   </h2>
 
                   <p>
-                    Tell us how many people
-                    are joining the trip.
+                    Tell us how
+                    many people
+                    are joining
+                    the trip.
                   </p>
                 </div>
               </div>
@@ -1209,10 +2180,13 @@ export default function Booking() {
                     value={
                       traveler.adults
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleTravelerCount(
                         "adults",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                   />
@@ -1233,10 +2207,13 @@ export default function Booking() {
                     value={
                       traveler.children
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleTravelerCount(
                         "children",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                   />
@@ -1257,10 +2234,13 @@ export default function Booking() {
                     value={
                       traveler.infants
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleTravelerCount(
                         "infants",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                   />
@@ -1269,7 +2249,9 @@ export default function Booking() {
 
               {errors.adults && (
                 <p className="booking-section-error">
-                  {errors.adults}
+                  {
+                    errors.adults
+                  }
                 </p>
               )}
 
@@ -1279,25 +2261,31 @@ export default function Booking() {
                 </span>
 
                 <strong>
-                  {totalTravelers}
+                  {
+                    totalTravelers
+                  }
                 </strong>
               </div>
             </section>
 
             <section className="booking-card">
               <div className="booking-card__title">
-                <Phone size={20} />
+                <Phone
+                  size={20}
+                />
 
                 <div>
                   <h2>
-                    Emergency contact{" "}
+                    Emergency
+                    contact{" "}
                     <small>
                       Optional
                     </small>
                   </h2>
 
                   <p>
-                    Useful for longer or
+                    Useful for
+                    longer or
                     activity-heavy
                     itineraries.
                   </p>
@@ -1321,10 +2309,13 @@ export default function Booking() {
                     value={
                       traveler.emergencyName
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "emergencyName",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="Full name"
@@ -1347,10 +2338,13 @@ export default function Booking() {
                     value={
                       traveler.emergencyPhone
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       updateField(
                         "emergencyPhone",
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="+63 9XX XXX XXXX"
@@ -1375,16 +2369,19 @@ export default function Booking() {
 
                 <div>
                   <h2>
-                    Special requests{" "}
+                    Special
+                    requests{" "}
                     <small>
                       Optional
                     </small>
                   </h2>
 
                   <p>
-                    Accessibility needs,
-                    room preferences,
-                    celebrations, or other
+                    Accessibility
+                    needs, room
+                    preferences,
+                    celebrations,
+                    or other
                     notes.
                   </p>
                 </div>
@@ -1397,10 +2394,13 @@ export default function Booking() {
                   value={
                     traveler.specialRequests
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     updateField(
                       "specialRequests",
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
                   placeholder="Tell us anything that would help us plan your trip better..."
@@ -1419,12 +2419,13 @@ export default function Booking() {
 
           <aside className="booking-price-card">
             <span>
-              Estimated trip total
+              Estimated trip
+              total
             </span>
 
             <strong>
               ₱
-              {estimatedTotal.toLocaleString()}
+              {subtotal.toLocaleString()}
             </strong>
 
             <div>
@@ -1433,25 +2434,34 @@ export default function Booking() {
                   ₱
                   {totalPrice.toLocaleString()}
                 </b>{" "}
-                itinerary / traveler
+                itinerary /
+                traveler
               </p>
 
               <p>
                 <b>
-                  × {totalTravelers}
+                  ×{" "}
+                  {
+                    totalTravelers
+                  }
                 </b>{" "}
-                {totalTravelers === 1
+                {totalTravelers ===
+                1
                   ? "traveler"
                   : "travelers"}
               </p>
             </div>
 
             <small>
-              Prototype estimate uses the
-              same tour rate for every
-              traveler. Final child/infant
-              pricing, availability, and
-              add-ons are confirmed before
+              Prototype estimate
+              uses the same tour
+              rate for every
+              traveler. Final
+              child/infant
+              pricing,
+              availability, and
+              add-ons are
+              confirmed before
               payment.
             </small>
 
@@ -1483,11 +2493,14 @@ export default function Booking() {
               <div className="booking-review-card__heading">
                 <div>
                   <span className="booking-kicker">
-                    Traveler details
+                    Traveler
+                    details
                   </span>
 
                   <h2>
-                    {traveler.name}
+                    {
+                      traveler.name
+                    }
                   </h2>
                 </div>
 
@@ -1504,13 +2517,21 @@ export default function Booking() {
 
               <div className="booking-review-facts">
                 <span>
-                  <Mail size={14} />{" "}
-                  {traveler.email}
+                  <Mail
+                    size={14}
+                  />{" "}
+                  {
+                    traveler.email
+                  }
                 </span>
 
                 <span>
-                  <Phone size={14} />{" "}
-                  {traveler.phone}
+                  <Phone
+                    size={14}
+                  />{" "}
+                  {
+                    traveler.phone
+                  }
                 </span>
 
                 <span>
@@ -1527,20 +2548,31 @@ export default function Booking() {
                   <CalendarDays
                     size={14}
                   />{" "}
-                  {tripDuration}
+                  {
+                    tripDuration
+                  }
                 </span>
 
                 <span>
-                  <Users size={14} />{" "}
-                  {totalTravelers}{" "}
-                  {totalTravelers === 1
+                  <Users
+                    size={14}
+                  />{" "}
+                  {
+                    totalTravelers
+                  }{" "}
+                  {totalTravelers ===
+                  1
                     ? "traveler"
                     : "travelers"}
                 </span>
 
                 {traveler.nationality && (
                   <span>
-                    <MapPin size={14} />{" "}
+                    <MapPin
+                      size={
+                        14
+                      }
+                    />{" "}
                     {
                       traveler.nationality
                     }
@@ -1550,22 +2582,34 @@ export default function Booking() {
 
               <div className="booking-party-breakdown">
                 <span>
-                  {traveler.adults} adult
-                  {traveler.adults === 1
+                  {
+                    traveler.adults
+                  }{" "}
+                  adult
+                  {traveler.adults ===
+                  1
                     ? ""
                     : "s"}
                 </span>
 
                 <span>
-                  {traveler.children} child
-                  {traveler.children === 1
+                  {
+                    traveler.children
+                  }{" "}
+                  child
+                  {traveler.children ===
+                  1
                     ? ""
                     : "ren"}
                 </span>
 
                 <span>
-                  {traveler.infants} infant
-                  {traveler.infants === 1
+                  {
+                    traveler.infants
+                  }{" "}
+                  infant
+                  {traveler.infants ===
+                  1
                     ? ""
                     : "s"}
                 </span>
@@ -1574,7 +2618,8 @@ export default function Booking() {
               {traveler.emergencyName && (
                 <p className="booking-review-note">
                   <strong>
-                    Emergency contact:
+                    Emergency
+                    contact:
                   </strong>{" "}
                   {
                     traveler.emergencyName
@@ -1589,7 +2634,8 @@ export default function Booking() {
               {traveler.specialRequests && (
                 <p className="booking-review-note">
                   <strong>
-                    Special requests:
+                    Special
+                    requests:
                   </strong>{" "}
                   {
                     traveler.specialRequests
@@ -1602,11 +2648,14 @@ export default function Booking() {
               <div className="booking-review-card__heading">
                 <div>
                   <span className="booking-kicker">
-                    Your itinerary
+                    Your
+                    itinerary
                   </span>
 
                   <h2>
-                    {tripDuration}
+                    {
+                      tripDuration
+                    }
                   </h2>
                 </div>
 
@@ -1620,12 +2669,17 @@ export default function Booking() {
 
               <div className="booking-days">
                 {tripPlan.days.map(
-                  (day, index) => (
+                  (
+                    day,
+                    index
+                  ) => (
                     <DaySummary
                       key={
                         day.dayNumber
                       }
-                      day={day}
+                      day={
+                        day
+                      }
                       travelDate={addDaysToDateValue(
                         traveler.travelDate,
                         index
@@ -1645,7 +2699,8 @@ export default function Booking() {
             <dl>
               <div>
                 <dt>
-                  Itinerary / traveler
+                  Itinerary /
+                  traveler
                 </dt>
 
                 <dd>
@@ -1660,9 +2715,242 @@ export default function Booking() {
                 </dt>
 
                 <dd>
-                  × {totalTravelers}
+                  ×{" "}
+                  {
+                    totalTravelers
+                  }
                 </dd>
               </div>
+
+              <div>
+                <dt>
+                  Subtotal
+                </dt>
+
+                <dd>
+                  ₱
+                  {subtotal.toLocaleString()}
+                </dd>
+              </div>
+            </dl>
+
+            <div
+              style={{
+                marginTop:
+                  "1.25rem",
+                padding:
+                  "1rem",
+                border:
+                  "1px solid var(--line)",
+                borderRadius:
+                  "var(--radius-sm)",
+                background:
+                  "rgba(87, 213, 189, 0.07)",
+              }}
+            >
+              <div
+                style={{
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  gap:
+                    "0.45rem",
+                  marginBottom:
+                    "0.75rem",
+                  fontWeight:
+                    700,
+                  color:
+                    "var(--deep-water)",
+                }}
+              >
+                <TicketPercent
+                  size={18}
+                />
+
+                Voucher
+              </div>
+
+              {vouchersLoading ? (
+                <small>
+                  Loading your
+                  vouchers...
+                </small>
+              ) : voucherLoadError ? (
+                <small
+                  style={{
+                    color:
+                      "#a11",
+                  }}
+                >
+                  {
+                    voucherLoadError
+                  }
+                </small>
+              ) : availableVouchers.length ===
+                0 ? (
+                <small>
+                  You don't have
+                  any available
+                  vouchers right
+                  now.
+                </small>
+              ) : (
+                <>
+                  <select
+                    value={
+                      selectedVoucherId
+                    }
+                    onChange={(
+                      event
+                    ) => {
+                      setSelectedVoucherId(
+                        event
+                          .target
+                          .value
+                      );
+
+                      setVoucherMessage(
+                        ""
+                      );
+                    }}
+                    disabled={
+                      Boolean(
+                        appliedVoucher
+                      )
+                    }
+                    style={{
+                      width:
+                        "100%",
+                      padding:
+                        "0.75rem",
+                      border:
+                        "1px solid var(--line)",
+                      borderRadius:
+                        "var(--radius-sm)",
+                      background:
+                        "var(--white)",
+                      color:
+                        "var(--ink)",
+                      font:
+                        "inherit",
+                    }}
+                  >
+                    <option value="">
+                      No voucher
+                    </option>
+
+                    {availableVouchers.map(
+                      (
+                        item
+                      ) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {formatVoucherLabel(
+                            item
+                          )}
+                        </option>
+                      )
+                    )}
+                  </select>
+
+                  {!appliedVoucher ? (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={
+                        handleApplyVoucher
+                      }
+                      disabled={
+                        !selectedVoucherId
+                      }
+                      style={{
+                        width:
+                          "100%",
+                        marginTop:
+                          "0.75rem",
+                      }}
+                    >
+                      Apply Voucher
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={
+                        handleRemoveVoucher
+                      }
+                      style={{
+                        width:
+                          "100%",
+                        marginTop:
+                          "0.75rem",
+                      }}
+                    >
+                      Remove Voucher
+                    </button>
+                  )}
+
+                  {voucherMessage && (
+                    <small
+                      style={{
+                        display:
+                          "block",
+                        marginTop:
+                          "0.7rem",
+                      }}
+                    >
+                      {
+                        voucherMessage
+                      }
+                    </small>
+                  )}
+                </>
+              )}
+            </div>
+
+            <dl
+              style={{
+                marginTop:
+                  "1rem",
+              }}
+            >
+              {appliedVoucher &&
+                discountAmount >
+                  0 && (
+                  <>
+                    <div>
+                      <dt>
+                        {
+                          appliedVoucher
+                            .voucher
+                            .code
+                        }
+                      </dt>
+
+                      <dd>
+                        Applied
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt>
+                        Discount
+                      </dt>
+
+                      <dd>
+                        -₱
+                        {discountAmount.toLocaleString()}
+                      </dd>
+                    </div>
+                  </>
+                )}
 
               <div className="booking-price-card__total">
                 <dt>
@@ -1677,16 +2965,37 @@ export default function Booking() {
             </dl>
 
             <small>
-              Sending this request does not
-              charge you. AddyVenture will
-              confirm availability and final
-              pricing before any payment
+              Sending this request
+              does not charge you.
+              AddyVenture will
+              confirm availability
+              and final pricing
+              before any payment
               step.
             </small>
 
+            {appliedVoucher && (
+              <small
+                style={{
+                  display:
+                    "block",
+                  marginTop:
+                    "0.65rem",
+                }}
+              >
+                Your voucher will
+                only be marked as
+                used after the
+                booking request is
+                successfully sent.
+              </small>
+            )}
+
             {submitError && (
               <p className="booking-section-error">
-                {submitError}
+                {
+                  submitError
+                }
               </p>
             )}
 
@@ -1704,7 +3013,8 @@ export default function Booking() {
                 "Sending..."
               ) : (
                 <>
-                  Send Trip Request{" "}
+                  Send Trip
+                  Request{" "}
                   <CheckCircle2
                     size={16}
                   />
@@ -1725,7 +3035,8 @@ export default function Booking() {
               <ArrowLeft
                 size={14}
               />{" "}
-              Back to traveler details
+              Back to traveler
+              details
             </button>
           </aside>
         </div>
