@@ -109,7 +109,7 @@ export async function getContactMessages() {
   return data;
 }
 
-// Get one contact message
+// Get one contact message + reply history
 export async function getContactMessageById(id) {
   const response = await fetch(
     `${API_URL}/api/contact-messages/${id}`
@@ -144,6 +144,32 @@ export async function updateContactMessageStatus(id, status) {
   if (!response.ok) {
     throw new Error(
       data.message || "Unable to update message"
+    );
+  }
+
+  return data;
+}
+
+// Send admin reply to customer
+export async function sendContactReply(id, replyMessage) {
+  const response = await fetch(
+    `${API_URL}/api/contact-messages/${id}/reply`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        replyMessage,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Unable to send reply"
     );
   }
 

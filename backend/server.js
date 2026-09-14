@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
+const { Resend } = require("resend");
 require("dotenv").config();
 
 const supabase = require("./supabase");
 
 const app = express();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -40,7 +43,7 @@ function formatBooking(booking) {
   };
 }
 
-// Convert Supabase contact columns to frontend-friendly names
+// Convert contact message columns
 function formatContactMessage(contact) {
   return {
     id: contact.id,
@@ -50,6 +53,18 @@ function formatContactMessage(contact) {
     message: contact.message,
     status: contact.status,
     createdAt: contact.created_at,
+  };
+}
+
+// Convert reply columns
+function formatContactReply(reply) {
+  return {
+    id: reply.id,
+    contactMessageId: reply.contact_message_id,
+    replyMessage: reply.reply_message,
+    sentTo: reply.sent_to,
+    providerMessageId: reply.provider_message_id,
+    createdAt: reply.created_at,
   };
 }
 
@@ -358,27 +373,43 @@ app.get("/api/contact-messages", async (req, res) => {
   }
 });
 
-// READ ONE CONTACT MESSAGE
+// READ ONE CONTACT MESSAGE + REPLY HISTORY
 app.get("/api/contact-messages/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { data, error } = await supabase
+    const { data: contact, error: contactError } = await supabase
       .from("contact_messages")
       .select("*")
       .eq("id", id)
       .single();
 
-    if (error) {
+    if (contactError) {
       return res.status(404).json({
         success: false,
         message: "Contact message not found.",
       });
     }
 
+    const { data: replies, error: repliesError } = await supabase
+      .from("contact_replies")
+      .select("*")
+      .eq("contact_message_id", id)
+      .order("created_at", { ascending: true });
+
+    if (repliesError) {
+      console.error("Get reply history error:", repliesError);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to retrieve reply history.",
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: formatContactMessage(data),
+      message: formatContactMessage(contact),
+      replies: replies.map(formatContactReply),
     });
   } catch (error) {
     console.error("Get contact message error:", error);
@@ -432,6 +463,98 @@ app.patch("/api/contact-messages/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Something went wrong while updating message.",
+    });
+  }
+});
+
+// SEND ADMIN REPLY
+app.post("/api/contact-messages/:id/reply", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { replyMessage } = req.body;
+
+    if (!replyMessage || replyMessage.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Reply message is required.",
+      });
+    }
+
+    const { data: contact, error: contactError } = await supabase
+      .from("contact_messages")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (contactError || !contact) {
+      return res.status(404).json({
+        success: false,
+        message: "Contact message not found.",
+      });
+    }
+
+    const { data: emailData, error: emailError } =
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL,
+        to: [contact.email],
+        subject: `Re: ${contact.subject}`,
+        text: replyMessage.trim(),
+      });
+
+    if (emailError) {
+      console.error("Resend email error:", emailError);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to send reply email.",
+      });
+    }
+
+    const { data: savedReply, error: replyError } = await supabase
+      .from("contact_replies")
+      .insert([
+        {
+          contact_message_id: contact.id,
+          reply_message: replyMessage.trim(),
+          sent_to: contact.email,
+          provider_message_id: emailData?.id || null,
+        },
+      ])
+      .select()
+      .single();
+
+    if (replyError) {
+      console.error("Save reply error:", replyError);
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Email was sent, but the reply could not be saved.",
+      });
+    }
+
+    const { error: statusError } = await supabase
+      .from("contact_messages")
+      .update({
+        status: "Replied",
+      })
+      .eq("id", contact.id);
+
+    if (statusError) {
+      console.error("Update replied status error:", statusError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Reply sent successfully!",
+      reply: formatContactReply(savedReply),
+    });
+  } catch (error) {
+    console.error("Send reply error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while sending the reply.",
     });
   }
 });
