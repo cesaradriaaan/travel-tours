@@ -108,6 +108,41 @@ const contactLimiter = rateLimit({
 
 
 // -----------------------------------------------------
+// PASSWORD LOGIN
+//
+// Allows a maximum of 10 failed login attempts
+// per 5-minute window for each client IP.
+// Successful logins do not consume the failed-attempt quota.
+// -----------------------------------------------------
+
+const loginLimiter = rateLimit({
+  windowMs:
+    5 * 60 * 1000,
+
+  limit:
+    10,
+
+  skipSuccessfulRequests:
+    true,
+
+  standardHeaders:
+    "draft-7",
+
+  legacyHeaders:
+    false,
+
+  handler:
+    (req, res) => {
+      return res.status(429).json(
+        rateLimitResponse(
+          "Too many login attempts. Please wait a few minutes before trying again."
+        )
+      );
+    },
+});
+
+
+// -----------------------------------------------------
 // CLIENT BOOKING CREATION
 //
 // Keyed by authenticated user instead of IP.
@@ -169,6 +204,42 @@ const cancellationRequestLimiter =
         return res.status(429).json(
           rateLimitResponse(
             "Too many cancellation attempts. Please wait before trying again."
+          )
+        );
+      },
+  });
+
+
+// -----------------------------------------------------
+// CLIENT VOUCHER REDEMPTION
+//
+// Protects voucher codes from guessing/brute force.
+// Keyed by authenticated user instead of IP.
+// -----------------------------------------------------
+
+const voucherRedeemLimiter =
+  rateLimit({
+    windowMs:
+      60 * 60 * 1000,
+
+    limit:
+      10,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      (req, res) => {
+        return res.status(429).json(
+          rateLimitResponse(
+            "Too many voucher redemption attempts. Please wait before trying again."
           )
         );
       },
@@ -767,6 +838,252 @@ function calculateVoucherDiscount(
 
 
 // =====================================================
+// AUTH — PASSWORD LOGIN
+// =====================================================
+
+app.post(
+  "/api/login",
+
+  loginLimiter,
+
+  async (req, res) => {
+    try {
+      const email =
+        typeof req.body?.email ===
+        "string"
+          ? req.body.email
+              .trim()
+              .toLowerCase()
+          : "";
+
+      const password =
+        typeof req.body?.password ===
+        "string"
+          ? req.body.password
+          : "";
+
+      if (
+        !email ||
+        !password
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Email and password are required.",
+        });
+      }
+
+      if (
+        email.length > 254 ||
+        password.length > 1024
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid login request.",
+        });
+      }
+
+      const supabaseUrl =
+        process.env.SUPABASE_URL;
+
+      const supabaseSecretKey =
+        process.env.SUPABASE_SECRET_KEY;
+
+      if (
+        !supabaseUrl ||
+        !supabaseSecretKey
+      ) {
+        console.error(
+          "Login configuration error: missing Supabase environment variables."
+        );
+
+        return res.status(500).json({
+          success: false,
+          message:
+            "Authentication service is unavailable.",
+        });
+      }
+
+      const authResponse =
+        await fetch(
+          `${supabaseUrl}/auth/v1/token?grant_type=password`,
+          {
+            method: "POST",
+
+            headers: {
+              apikey:
+                supabaseSecretKey,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              JSON.stringify({
+                email,
+                password,
+              }),
+          }
+        );
+
+      let authData = null;
+
+      try {
+        authData =
+          await authResponse.json();
+      } catch (parseError) {
+        console.error(
+          "Login response parse error:",
+          parseError
+        );
+
+        return res.status(502).json({
+          success: false,
+          message:
+            "Authentication service returned an unexpected response.",
+        });
+      }
+
+      if (!authResponse.ok) {
+        const authCode =
+          String(
+            authData?.error_code ||
+              authData?.code ||
+              ""
+          ).toLowerCase();
+
+        const authMessage =
+          String(
+            authData?.msg ||
+              authData?.message ||
+              authData?.error_description ||
+              ""
+          ).toLowerCase();
+
+        if (
+          authResponse.status ===
+            429
+        ) {
+          return res.status(429).json({
+            success: false,
+            message:
+              "Too many login attempts. Please wait a few minutes before trying again.",
+          });
+        }
+
+        if (
+          authCode.includes(
+            "email_not_confirmed"
+          ) ||
+          authMessage.includes(
+            "email not confirmed"
+          )
+        ) {
+          return res.status(403).json({
+            success: false,
+            message:
+              "Please verify your email address before logging in.",
+          });
+        }
+
+        if (
+          authResponse.status ===
+            400 ||
+          authResponse.status ===
+            401 ||
+          authCode.includes(
+            "invalid_credentials"
+          ) ||
+          authMessage.includes(
+            "invalid login credentials"
+          )
+        ) {
+          return res.status(401).json({
+            success: false,
+            message:
+              "Incorrect email or password.",
+          });
+        }
+
+        console.error(
+          "Supabase login error:",
+          {
+            status:
+              authResponse.status,
+            code:
+              authData?.error_code ||
+              authData?.code ||
+              null,
+          }
+        );
+
+        return res.status(502).json({
+          success: false,
+          message:
+            "Unable to log in right now. Please try again.",
+        });
+      }
+
+      if (
+        !authData?.access_token ||
+        !authData?.refresh_token
+      ) {
+        console.error(
+          "Login response missing session tokens."
+        );
+
+        return res.status(502).json({
+          success: false,
+          message:
+            "Authentication service returned an incomplete session.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Login successful.",
+
+        session: {
+          accessToken:
+            authData.access_token,
+
+          refreshToken:
+            authData.refresh_token,
+
+          expiresIn:
+            authData.expires_in ||
+            null,
+        },
+
+        user: authData.user
+          ? {
+              id:
+                authData.user.id,
+
+              email:
+                authData.user.email,
+            }
+          : null,
+      });
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while logging in.",
+      });
+    }
+  }
+);
+
+
+// =====================================================
 // HEALTH
 // =====================================================
 
@@ -985,6 +1302,106 @@ app.get(
         success: false,
         message:
           "Something went wrong while retrieving your vouchers.",
+      });
+    }
+  }
+);
+
+
+// =====================================================
+// CLIENT — REDEEM VOUCHER
+// =====================================================
+
+app.post(
+  "/api/redeem-voucher",
+
+  requireAuth,
+
+  voucherRedeemLimiter,
+
+  async (req, res) => {
+    try {
+      const code =
+        typeof req.body?.code ===
+        "string"
+          ? req.body.code
+              .trim()
+              .toUpperCase()
+          : "";
+
+      if (!code) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Enter a voucher code.",
+        });
+      }
+
+      if (code.length > 50) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Voucher code is too long.",
+        });
+      }
+
+      const {
+        data,
+        error,
+      } =
+        await supabase.rpc(
+          "redeem_voucher_backend",
+          {
+            p_user_id:
+              req.user.id,
+
+            p_code:
+              code,
+          }
+        );
+
+      if (error) {
+        console.error(
+          "Redeem voucher error:",
+          error
+        );
+
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to redeem voucher.",
+        });
+      }
+
+      if (!data?.success) {
+        return res.status(400).json({
+          success: false,
+          message:
+            data?.message ||
+            "Unable to redeem voucher.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message:
+          data.message ||
+          "Voucher redeemed successfully!",
+
+        voucherId:
+          data.voucher_id ||
+          null,
+      });
+    } catch (error) {
+      console.error(
+        "Redeem voucher error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Something went wrong while redeeming the voucher.",
       });
     }
   }
