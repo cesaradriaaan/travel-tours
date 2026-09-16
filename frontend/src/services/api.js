@@ -3,6 +3,24 @@ import { supabase } from "../lib/supabaseClient";
 const API_URL =
   import.meta.env.VITE_API_URL;
 
+const DEFAULT_API_TIMEOUT_MS =
+  20000;
+
+const MUTATION_API_TIMEOUT_MS =
+  30000;
+
+const EMAIL_API_TIMEOUT_MS =
+  45000;
+
+const BOOKING_REQUEST_STORAGE_KEY =
+  "addyventure.pendingBookingRequest";
+
+const inFlightBookingRequests =
+  new Map();
+
+let memoryBookingRequest =
+  null;
+
 
 // =====================================================
 // AUTH
@@ -57,57 +75,575 @@ async function readJsonResponse(
     );
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch (error) {
+    console.error(
+      "Invalid API JSON response:",
+      error
+    );
+
+    throw new Error(
+      "The server returned invalid data."
+    );
+  }
 }
 
 
-async function authenticatedFetch(
+function createApiError(
+  response,
+  data,
+  fallbackMessage
+) {
+  const statusMessages = {
+    400:
+      "The request could not be processed.",
+
+    401:
+      "Your session has expired. Please log in again.",
+
+    403:
+      "You do not have permission to perform this action.",
+
+    404:
+      "The requested information could not be found.",
+
+    409:
+      "This action conflicts with the latest saved data. Please refresh and try again.",
+
+    429:
+      "Too many requests. Please wait before trying again.",
+
+    500:
+      "The server encountered an error. Please try again later.",
+  };
+
+  const message =
+    typeof data?.message ===
+      "string" &&
+    data.message.trim()
+      ? data.message
+      : statusMessages[
+          response.status
+        ] ||
+        fallbackMessage;
+
+  const error =
+    new Error(message);
+
+  error.status =
+    response.status;
+
+  error.code =
+    `HTTP_${response.status}`;
+
+  return error;
+}
+
+
+async function fetchJsonWithTimeout(
   url,
+  options,
+  timeoutMs
+) {
+  const controller =
+    new AbortController();
+
+  const externalSignal =
+    options.signal;
+
+  let timedOut =
+    false;
+
+  const forwardAbort =
+    () => {
+      controller.abort();
+    };
+
+  if (
+    externalSignal
+      ?.aborted
+  ) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener(
+      "abort",
+      forwardAbort,
+      { once: true }
+    );
+  }
+
+  const timeoutId =
+    setTimeout(
+      () => {
+        timedOut =
+          true;
+
+        controller.abort();
+      },
+      timeoutMs
+    );
+
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+          signal:
+            controller.signal,
+        }
+      );
+
+    const data =
+      await readJsonResponse(
+        response
+      );
+
+    return {
+      response,
+      data,
+    };
+  } catch (error) {
+    if (timedOut) {
+      const timeoutError =
+        new Error(
+          "The request timed out."
+        );
+
+      timeoutError.name =
+        "TimeoutError";
+
+      throw timeoutError;
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(
+      timeoutId
+    );
+
+    externalSignal?.removeEventListener(
+      "abort",
+      forwardAbort
+    );
+  }
+}
+
+
+async function apiRequest(
+  path,
   options = {}
 ) {
-  const accessToken =
-    await getAccessToken();
+  const {
+    authenticated =
+      false,
 
-  return fetch(
-    url,
-    {
-      ...options,
+    timeoutMs =
+      DEFAULT_API_TIMEOUT_MS,
 
-      headers: {
-        ...(options.headers ||
-          {}),
+    fallbackMessage =
+      "The request failed.",
 
-        Authorization:
-          `Bearer ${accessToken}`,
-      },
+    headers = {},
+
+    ...fetchOptions
+  } = options;
+
+  const requestHeaders = {
+    ...headers,
+  };
+
+  if (authenticated) {
+    const accessToken =
+      await getAccessToken();
+
+    requestHeaders.Authorization =
+      `Bearer ${accessToken}`;
+  }
+
+  const method =
+    (
+      fetchOptions.method ||
+      "GET"
+    ).toUpperCase();
+
+  const isMutation =
+    ![
+      "GET",
+      "HEAD",
+    ].includes(method);
+
+  try {
+    const {
+      response,
+      data,
+    } =
+      await fetchJsonWithTimeout(
+        `${API_URL}${path}`,
+        {
+          ...fetchOptions,
+          headers:
+            requestHeaders,
+        },
+        timeoutMs
+      );
+
+    if (!response.ok) {
+      throw createApiError(
+        response,
+        data,
+        fallbackMessage
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (
+      error.name ===
+      "TimeoutError"
+    ) {
+      throw new Error(
+        isMutation
+          ? "The server took too long to respond. Check whether the action completed before trying again."
+          : "The request took too long. Please try again."
+      );
+    }
+
+    if (
+      error.name ===
+      "AbortError"
+    ) {
+      throw new Error(
+        "The request was cancelled."
+      );
+    }
+
+    if (
+      error instanceof
+        TypeError
+    ) {
+      throw new Error(
+        isMutation
+          ? "The connection was interrupted. Check whether the action completed before trying again."
+          : "Unable to connect to the server. Check your internet connection and try again."
+      );
+    }
+
+    throw error;
+  }
+}
+
+
+// =====================================================
+// BOOKING IDEMPOTENCY
+// =====================================================
+
+function serializeBookingData(
+  bookingData
+) {
+  return JSON.stringify(
+    bookingData,
+    (key, value) => {
+      if (
+        value &&
+        typeof value ===
+          "object" &&
+        !Array.isArray(value)
+      ) {
+        return Object.keys(
+          value
+        )
+          .sort()
+          .reduce(
+            (
+              sorted,
+              currentKey
+            ) => {
+              sorted[
+                currentKey
+              ] =
+                value[
+                  currentKey
+                ];
+
+              return sorted;
+            },
+            {}
+          );
+      }
+
+      return value;
     }
   );
 }
 
 
-// =====================================================
-// HEALTH
-// =====================================================
-
-export async function checkBackendHealth() {
-  const response =
-    await fetch(
-      `${API_URL}/api/health`
+async function createBookingSignature(
+  bookingData
+) {
+  const serialized =
+    serializeBookingData(
+      bookingData
     );
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+  if (
+    globalThis.crypto
+      ?.subtle &&
+    typeof TextEncoder !==
+      "undefined"
+  ) {
+    const digest =
+      await globalThis.crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(
+          serialized
+        )
+      );
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Backend connection failed"
+    return Array.from(
+      new Uint8Array(
+        digest
+      )
+    )
+      .map((byte) =>
+        byte
+          .toString(16)
+          .padStart(2, "0")
+      )
+      .join("");
+  }
+
+  let hash =
+    2166136261;
+
+  for (
+    let index = 0;
+    index <
+    serialized.length;
+    index += 1
+  ) {
+    hash ^=
+      serialized.charCodeAt(
+        index
+      );
+
+    hash =
+      Math.imul(
+        hash,
+        16777619
+      );
+  }
+
+  return `${serialized.length}-${(
+    hash >>> 0
+  ).toString(16)}`;
+}
+
+
+function createIdempotencyKey() {
+  if (
+    globalThis.crypto
+      ?.randomUUID
+  ) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return [
+    "booking",
+    Date.now().toString(36),
+    Math.random()
+      .toString(36)
+      .slice(2),
+    Math.random()
+      .toString(36)
+      .slice(2),
+  ].join("-");
+}
+
+
+function isValidIdempotencyKey(
+  value
+) {
+  return (
+    typeof value ===
+      "string" &&
+    value.length >= 16 &&
+    value.length <= 128 &&
+    /^[A-Za-z0-9._:-]+$/.test(
+      value
+    )
+  );
+}
+
+
+function readPendingBookingRequest() {
+  try {
+    const storedValue =
+      sessionStorage.getItem(
+        BOOKING_REQUEST_STORAGE_KEY
+      );
+
+    if (!storedValue) {
+      return memoryBookingRequest;
+    }
+
+    const parsedValue =
+      JSON.parse(
+        storedValue
+      );
+
+    if (
+      typeof parsedValue
+        ?.signature ===
+        "string" &&
+      isValidIdempotencyKey(
+        parsedValue
+          ?.idempotencyKey
+      )
+    ) {
+      memoryBookingRequest =
+        parsedValue;
+
+      return parsedValue;
+    }
+
+    sessionStorage.removeItem(
+      BOOKING_REQUEST_STORAGE_KEY
+    );
+  } catch (error) {
+    console.warn(
+      "Unable to read the pending booking request:",
+      error
     );
   }
 
-  return data;
+  return memoryBookingRequest;
+}
+
+
+function savePendingBookingRequest(
+  request
+) {
+  memoryBookingRequest =
+    request;
+
+  try {
+    sessionStorage.setItem(
+      BOOKING_REQUEST_STORAGE_KEY,
+      JSON.stringify(request)
+    );
+  } catch (error) {
+    console.warn(
+      "Unable to save the pending booking request:",
+      error
+    );
+  }
+}
+
+
+function clearPendingBookingRequest(
+  signature,
+  idempotencyKey
+) {
+  const pendingRequest =
+    readPendingBookingRequest();
+
+  if (
+    pendingRequest
+      ?.signature !==
+      signature ||
+    pendingRequest
+      ?.idempotencyKey !==
+      idempotencyKey
+  ) {
+    return;
+  }
+
+  memoryBookingRequest =
+    null;
+
+  try {
+    sessionStorage.removeItem(
+      BOOKING_REQUEST_STORAGE_KEY
+    );
+  } catch (error) {
+    console.warn(
+      "Unable to clear the pending booking request:",
+      error
+    );
+  }
+}
+
+
+async function getBookingRequest(
+  bookingData
+) {
+  const signature =
+    await createBookingSignature(
+      bookingData
+    );
+
+  const pendingRequest =
+    readPendingBookingRequest();
+
+  if (
+    pendingRequest
+      ?.signature ===
+      signature
+  ) {
+    return pendingRequest;
+  }
+
+  const request = {
+    signature,
+    idempotencyKey:
+      createIdempotencyKey(),
+  };
+
+  savePendingBookingRequest(
+    request
+  );
+
+  return request;
+}
+
+
+// =====================================================
+// AUTH
+// =====================================================
+
+export async function loginWithPassword(
+  email,
+  password,
+  options = {}
+) {
+  return apiRequest(
+    "/api/login",
+    {
+      method: "POST",
+
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
+
+      fallbackMessage:
+        "Unable to log in.",
+
+      signal:
+        options.signal,
+
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          email,
+          password,
+        }),
+    }
+  );
 }
 
 
@@ -118,121 +654,156 @@ export async function checkBackendHealth() {
 export async function createBooking(
   bookingData
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/bookings`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body:
-          JSON.stringify(
-            bookingData
-          ),
-      }
+  const {
+    signature,
+    idempotencyKey,
+  } =
+    await getBookingRequest(
+      bookingData
     );
 
-  const data =
-    await readJsonResponse(
-      response
+  const inFlightRequest =
+    inFlightBookingRequests.get(
+      signature
     );
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Booking request failed"
-    );
+  if (inFlightRequest) {
+    return inFlightRequest;
   }
 
-  return data;
+  const request =
+    (async () => {
+      const data =
+        await apiRequest(
+          "/api/bookings",
+          {
+            authenticated:
+              true,
+
+            method: "POST",
+
+            timeoutMs:
+              MUTATION_API_TIMEOUT_MS,
+
+            fallbackMessage:
+              "Booking request failed",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "Idempotency-Key":
+                idempotencyKey,
+            },
+
+            body:
+              JSON.stringify(
+                bookingData
+              ),
+          }
+        );
+
+      clearPendingBookingRequest(
+        signature,
+        idempotencyKey
+      );
+
+      return data;
+    })();
+
+  inFlightBookingRequests.set(
+    signature,
+    request
+  );
+
+  try {
+    return await request;
+  } finally {
+    if (
+      inFlightBookingRequests.get(
+        signature
+      ) === request
+    ) {
+      inFlightBookingRequests.delete(
+        signature
+      );
+    }
+  }
 }
 
 
-export async function getMyBookings() {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/my-bookings`
-    );
+export async function getMyBookings(
+  options = {}
+) {
+  return apiRequest(
+    "/api/my-bookings",
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load your bookings",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load your bookings"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function getMyBookingById(
-  id
+  id,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/my-bookings/${id}`
-    );
+  return apiRequest(
+    `/api/my-bookings/${id}`,
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load your booking",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load your booking"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function requestBookingCancellation(
   id,
-  reason = ""
+  reason = "",
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/my-bookings/${id}/cancellation-request`,
-      {
-        method: "POST",
+  return apiRequest(
+    `/api/my-bookings/${id}/cancellation-request`,
+    {
+      authenticated:
+        true,
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      method: "POST",
 
-        body:
-          JSON.stringify({
-            reason,
-          }),
-      }
-    );
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to request cancellation",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to request cancellation"
-    );
-  }
+      signal:
+        options.signal,
 
-  return data;
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          reason,
+        }),
+    }
+  );
 }
 
 
@@ -240,62 +811,57 @@ export async function requestBookingCancellation(
 // CLIENT — VOUCHERS
 // =====================================================
 
-export async function getMyVouchers() {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/my-vouchers`
-    );
+export async function getMyVouchers(
+  options = {}
+) {
+  return apiRequest(
+    "/api/my-vouchers",
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load your vouchers",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load your vouchers"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function redeemVoucher(
-  code
+  code,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/redeem-voucher`,
-      {
-        method: "POST",
+  return apiRequest(
+    "/api/redeem-voucher",
+    {
+      authenticated:
+        true,
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      method: "POST",
 
-        body:
-          JSON.stringify({
-            code,
-          }),
-      }
-    );
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to redeem voucher",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to redeem voucher"
-    );
-  }
+      signal:
+        options.signal,
 
-  return data;
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          code,
+        }),
+    }
+  );
 }
 
 
@@ -303,125 +869,114 @@ export async function redeemVoucher(
 // ADMIN — BOOKINGS
 // =====================================================
 
-export async function getBookings() {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/bookings`
-    );
+export async function getBookings(
+  options = {}
+) {
+  return apiRequest(
+    "/api/bookings",
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load bookings",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load bookings"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function getBookingById(
-  id
+  id,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/bookings/${id}`
-    );
+  return apiRequest(
+    `/api/bookings/${id}`,
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load booking",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load booking"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function updateBookingStatus(
   id,
-  status
+  status,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/bookings/${id}`,
-      {
-        method: "PATCH",
+  return apiRequest(
+    `/api/bookings/${id}`,
+    {
+      authenticated:
+        true,
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      method: "PATCH",
 
-        body:
-          JSON.stringify({
-            status,
-          }),
-      }
-    );
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to update booking",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to update booking"
-    );
-  }
+      signal:
+        options.signal,
 
-  return data;
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          status,
+        }),
+    }
+  );
 }
 
 
 export async function resolveBookingCancellation(
   id,
-  decision
+  decision,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/bookings/${id}/cancellation-resolution`,
-      {
-        method: "POST",
+  return apiRequest(
+    `/api/bookings/${id}/cancellation-resolution`,
+    {
+      authenticated:
+        true,
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      method: "POST",
 
-        body:
-          JSON.stringify({
-            decision,
-          }),
-      }
-    );
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to resolve cancellation request",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to resolve cancellation request"
-    );
-  }
+      signal:
+        options.signal,
 
-  return data;
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          decision,
+        }),
+    }
+  );
 }
 
 
@@ -430,39 +985,34 @@ export async function resolveBookingCancellation(
 // =====================================================
 
 export async function sendContactMessage(
-  contactData
+  contactData,
+  options = {}
 ) {
-  const response =
-    await fetch(
-      `${API_URL}/api/contact`,
-      {
-        method: "POST",
+  return apiRequest(
+    "/api/contact",
+    {
+      method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
 
-        body:
-          JSON.stringify(
-            contactData
-          ),
-      }
-    );
+      fallbackMessage:
+        "Unable to send message",
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      signal:
+        options.signal,
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to send message"
-    );
-  }
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
 
-  return data;
+      body:
+        JSON.stringify(
+          contactData
+        ),
+    }
+  );
 }
 
 
@@ -470,123 +1020,112 @@ export async function sendContactMessage(
 // ADMIN — CONTACT MESSAGES
 // =====================================================
 
-export async function getContactMessages() {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/contact-messages`
-    );
+export async function getContactMessages(
+  options = {}
+) {
+  return apiRequest(
+    "/api/contact-messages",
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load contact messages",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load contact messages"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function getContactMessageById(
-  id
+  id,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/contact-messages/${id}`
-    );
+  return apiRequest(
+    `/api/contact-messages/${id}`,
+    {
+      authenticated:
+        true,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to load contact message",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to load contact message"
-    );
-  }
-
-  return data;
+      signal:
+        options.signal,
+    }
+  );
 }
 
 
 export async function updateContactMessageStatus(
   id,
-  status
+  status,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/contact-messages/${id}`,
-      {
-        method: "PATCH",
+  return apiRequest(
+    `/api/contact-messages/${id}`,
+    {
+      authenticated:
+        true,
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      method: "PATCH",
 
-        body:
-          JSON.stringify({
-            status,
-          }),
-      }
-    );
+      timeoutMs:
+        MUTATION_API_TIMEOUT_MS,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to update message",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to update message"
-    );
-  }
+      signal:
+        options.signal,
 
-  return data;
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          status,
+        }),
+    }
+  );
 }
 
 
 export async function sendContactReply(
   id,
-  replyMessage
+  replyMessage,
+  options = {}
 ) {
-  const response =
-    await authenticatedFetch(
-      `${API_URL}/api/contact-messages/${id}/reply`,
-      {
-        method: "POST",
+  return apiRequest(
+    `/api/contact-messages/${id}/reply`,
+    {
+      authenticated:
+        true,
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+      method: "POST",
 
-        body:
-          JSON.stringify({
-            replyMessage,
-          }),
-      }
-    );
+      timeoutMs:
+        EMAIL_API_TIMEOUT_MS,
 
-  const data =
-    await readJsonResponse(
-      response
-    );
+      fallbackMessage:
+        "Unable to send reply",
 
-  if (!response.ok) {
-    throw new Error(
-      data.message ||
-        "Unable to send reply"
-    );
-  }
+      signal:
+        options.signal,
 
-  return data;
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+
+      body:
+        JSON.stringify({
+          replyMessage,
+        }),
+    }
+  );
 }

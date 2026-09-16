@@ -837,6 +837,169 @@ function calculateVoucherDiscount(
 }
 
 
+function formatCreatedBooking(
+  booking
+) {
+  return {
+    id:
+      booking.id,
+
+    userId:
+      booking.user_id,
+
+    bookingReference:
+      booking.booking_reference,
+
+    status:
+      booking.status,
+
+    subtotal:
+      Number(
+        booking.subtotal
+      ),
+
+    discountAmount:
+      Number(
+        booking.discount_amount ||
+          0
+      ),
+
+    estimatedTotal:
+      Number(
+        booking.estimated_total
+      ),
+
+    voucherId:
+      booking.voucher_id,
+
+    voucherCode:
+      booking.voucher_code,
+
+    createdAt:
+      booking.created_at,
+  };
+}
+
+
+async function findBookingByIdempotencyKey(
+  userId,
+  idempotencyKey
+) {
+  return supabase
+    .from("bookings")
+    .select("*")
+    .eq(
+      "user_id",
+      userId
+    )
+    .eq(
+      "idempotency_key",
+      idempotencyKey
+    )
+    .maybeSingle();
+}
+
+
+async function requireBookingIdempotencyKey(
+  req,
+  res,
+  next
+) {
+  try {
+    const rawKey =
+      req.get(
+        "Idempotency-Key"
+      );
+
+    const idempotencyKey =
+      typeof rawKey ===
+      "string"
+        ? rawKey.trim()
+        : "";
+
+    if (!idempotencyKey) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "A booking request key is required. Please refresh the page and try again.",
+      });
+    }
+
+    if (
+      idempotencyKey.length <
+        16 ||
+      idempotencyKey.length >
+        128 ||
+      !/^[A-Za-z0-9._:-]+$/.test(
+        idempotencyKey
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "The booking request key is invalid. Please refresh the page and try again.",
+      });
+    }
+
+    const {
+      data:
+        existingBooking,
+      error:
+        existingBookingError,
+    } =
+      await findBookingByIdempotencyKey(
+        req.user.id,
+        idempotencyKey
+      );
+
+    if (
+      existingBookingError
+    ) {
+      console.error(
+        "Booking idempotency lookup error:",
+        existingBookingError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Unable to verify this booking request. Please try again.",
+      });
+    }
+
+    if (existingBooking) {
+      return res.status(200).json({
+        success: true,
+        message:
+          "This booking request was already received.",
+        idempotentReplay:
+          true,
+        booking:
+          formatCreatedBooking(
+            existingBooking
+          ),
+      });
+    }
+
+    req.idempotencyKey =
+      idempotencyKey;
+
+    return next();
+  } catch (error) {
+    console.error(
+      "Booking idempotency error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to verify this booking request. Please try again.",
+    });
+  }
+}
+
+
 // =====================================================
 // AUTH — PASSWORD LOGIN
 // =====================================================
@@ -1417,6 +1580,8 @@ app.post(
 
   requireAuth,
 
+  requireBookingIdempotencyKey,
+
   bookingCreationLimiter,
 
   async (req, res) => {
@@ -1640,6 +1805,9 @@ app.post(
               user_id:
                 req.user.id,
 
+              idempotency_key:
+                req.idempotencyKey,
+
               booking_reference:
                 bookingReference,
 
@@ -1705,6 +1873,49 @@ app.post(
           .single();
 
       if (error) {
+        if (
+          error.code ===
+          "23505"
+        ) {
+          const {
+            data:
+              existingBooking,
+            error:
+              existingBookingError,
+          } =
+            await findBookingByIdempotencyKey(
+              req.user.id,
+              req.idempotencyKey
+            );
+
+          if (
+            !existingBookingError &&
+            existingBooking
+          ) {
+            if (
+              userVoucherId
+            ) {
+              return res.status(409).json({
+                success: false,
+                message:
+                  "This booking request is already being processed. Please wait a moment before trying again.",
+              });
+            }
+
+            return res.status(200).json({
+              success: true,
+              message:
+                "This booking request was already received.",
+              idempotentReplay:
+                true,
+              booking:
+                formatCreatedBooking(
+                  existingBooking
+                ),
+            });
+          }
+        }
+
         console.error(
           "Supabase booking error:",
           error
@@ -1802,44 +2013,13 @@ app.post(
         message:
           "Booking request received!",
 
-        booking: {
-          id:
-            data.id,
+        idempotentReplay:
+          false,
 
-          userId:
-            data.user_id,
-
-          bookingReference:
-            data.booking_reference,
-
-          status:
-            data.status,
-
-          subtotal:
-            Number(
-              data.subtotal
-            ),
-
-          discountAmount:
-            Number(
-              data.discount_amount ||
-                0
-            ),
-
-          estimatedTotal:
-            Number(
-              data.estimated_total
-            ),
-
-          voucherId:
-            data.voucher_id,
-
-          voucherCode:
-            data.voucher_code,
-
-          createdAt:
-            data.created_at,
-        },
+        booking:
+          formatCreatedBooking(
+            data
+          ),
       });
     } catch (error) {
       console.error(

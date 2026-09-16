@@ -1,4 +1,7 @@
-import { useState } from "react";
+import {
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronDown,
   CircleHelp,
@@ -41,6 +44,8 @@ const initialForm = {
 };
 
 export default function Contact() {
+  const submitLockRef = useRef(false);
+
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -74,6 +79,10 @@ export default function Contact() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (submitLockRef.current) {
+      return;
+    }
+
     const nextErrors = validate();
 
     setErrors(nextErrors);
@@ -83,6 +92,8 @@ export default function Contact() {
     if (Object.keys(nextErrors).length > 0) {
       return;
     }
+
+    submitLockRef.current = true;
 
     try {
       setIsSubmitting(true);
@@ -101,6 +112,7 @@ export default function Contact() {
         error.message || "Unable to send your message. Please try again."
       );
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -180,6 +192,7 @@ export default function Contact() {
                   value={form.name}
                   onChange={updateField}
                   autoComplete="name"
+                  disabled={isSubmitting}
                   aria-invalid={Boolean(errors.name)}
                   aria-describedby={
                     errors.name ? "contact-name-error" : undefined
@@ -206,6 +219,7 @@ export default function Contact() {
                   value={form.email}
                   onChange={updateField}
                   autoComplete="email"
+                  disabled={isSubmitting}
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={
                     errors.email ? "contact-email-error" : undefined
@@ -232,6 +246,7 @@ export default function Contact() {
                   name="topic"
                   value={form.topic}
                   onChange={updateField}
+                  disabled={isSubmitting}
                 >
                   <option>Trip planning</option>
                   <option>Booking request</option>
@@ -249,6 +264,7 @@ export default function Contact() {
                   rows="6"
                   value={form.message}
                   onChange={updateField}
+                  disabled={isSubmitting}
                   aria-invalid={Boolean(errors.message)}
                   aria-describedby={
                     errors.message

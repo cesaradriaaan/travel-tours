@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -217,6 +218,18 @@ function StatusSelect({
 
 
 export default function AdminMessages() {
+  const messagesAbortRef =
+    useRef(null);
+
+  const detailsAbortRef =
+    useRef(null);
+
+  const statusLockRef =
+    useRef(false);
+
+  const replyLockRef =
+    useRef(false);
+
   const [
     messages,
     setMessages,
@@ -280,26 +293,79 @@ export default function AdminMessages() {
 
   useEffect(() => {
     loadMessages();
+
+    return () => {
+      messagesAbortRef
+        .current
+        ?.abort();
+
+      messagesAbortRef.current =
+        null;
+
+      detailsAbortRef
+        .current
+        ?.abort();
+
+      detailsAbortRef.current =
+        null;
+    };
   }, []);
 
 
   async function loadMessages() {
+    if (messagesAbortRef.current) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    messagesAbortRef.current =
+      controller;
+
     try {
       setLoading(true);
       setError("");
 
       const result =
-        await getContactMessages();
+        await getContactMessages({
+          signal:
+            controller.signal,
+        });
+
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
 
       setMessages(
         result.messages || []
       );
     } catch (error) {
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
       setError(
         error.message
       );
     } finally {
-      setLoading(false);
+      if (
+        messagesAbortRef.current ===
+        controller
+      ) {
+        messagesAbortRef.current =
+          null;
+
+        if (
+          !controller.signal.aborted
+        ) {
+          setLoading(false);
+        }
+      }
     }
   }
 
@@ -308,6 +374,26 @@ export default function AdminMessages() {
     id,
     status
   ) {
+    if (statusLockRef.current) {
+      return;
+    }
+
+    const currentMessage =
+      messages.find(
+        (message) =>
+          message.id === id
+      );
+
+    if (
+      currentMessage?.status ===
+      status
+    ) {
+      return;
+    }
+
+    statusLockRef.current =
+      true;
+
     try {
       setUpdatingId(id);
       setError("");
@@ -346,6 +432,9 @@ export default function AdminMessages() {
         error.message
       );
     } finally {
+      statusLockRef.current =
+        false;
+
       setUpdatingId(null);
     }
   }
@@ -354,17 +443,38 @@ export default function AdminMessages() {
   async function handleViewMessage(
     id
   ) {
+    if (detailsAbortRef.current) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    detailsAbortRef.current =
+      controller;
+
     try {
       setDetailsLoading(true);
       setError("");
       setReplyError("");
       setReplySuccess("");
       setReplyMessage("");
+      setSelectedMessage(null);
 
       const result =
         await getContactMessageById(
-          id
+          id,
+          {
+            signal:
+              controller.signal,
+          }
         );
+
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
 
       let message = {
         ...result.message,
@@ -373,14 +483,37 @@ export default function AdminMessages() {
           result.replies || [],
       };
 
+      setSelectedMessage(
+        message
+      );
+
       if (
         message.status ===
         "Unread"
       ) {
-        await updateContactMessageStatus(
-          id,
-          "Read"
-        );
+        try {
+          await updateContactMessageStatus(
+            id,
+            "Read",
+            {
+              signal:
+                controller.signal,
+            }
+          );
+        } catch (statusError) {
+          if (
+            controller.signal.aborted
+          ) {
+            return;
+          }
+
+          setError(
+            statusError.message ||
+              "The message opened, but its read status could not be updated."
+          );
+
+          return;
+        }
 
         message = {
           ...message,
@@ -406,11 +539,29 @@ export default function AdminMessages() {
         message
       );
     } catch (error) {
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
       setError(
         error.message
       );
     } finally {
-      setDetailsLoading(false);
+      if (
+        detailsAbortRef.current ===
+        controller
+      ) {
+        detailsAbortRef.current =
+          null;
+
+        if (
+          !controller.signal.aborted
+        ) {
+          setDetailsLoading(false);
+        }
+      }
     }
   }
 
@@ -419,6 +570,10 @@ export default function AdminMessages() {
     event
   ) {
     event.preventDefault();
+
+    if (replyLockRef.current) {
+      return;
+    }
 
     const cleanReply =
       replyMessage.trim();
@@ -433,6 +588,9 @@ export default function AdminMessages() {
 
       return;
     }
+
+    replyLockRef.current =
+      true;
 
     try {
       setSendingReply(true);
@@ -487,6 +645,9 @@ export default function AdminMessages() {
           "Unable to send reply."
       );
     } finally {
+      replyLockRef.current =
+        false;
+
       setSendingReply(false);
     }
   }
@@ -713,11 +874,14 @@ export default function AdminMessages() {
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={
-            loadMessages
+          onClick={() =>
+            loadMessages()
           }
+          disabled={loading}
         >
-          Refresh
+          {loading
+            ? "Refreshing..."
+            : "Refresh"}
         </button>
       </div>
 
@@ -822,8 +986,8 @@ export default function AdminMessages() {
                         message.status
                       }
                       disabled={
-                        updatingId ===
-                        message.id
+                        updatingId !==
+                        null
                       }
                       onChange={(
                         event
@@ -841,6 +1005,9 @@ export default function AdminMessages() {
                     <button
                       type="button"
                       className="btn btn-secondary"
+                      disabled={
+                        detailsLoading
+                      }
                       onClick={() =>
                         handleViewMessage(
                           message.id
@@ -1381,8 +1548,8 @@ export default function AdminMessages() {
                   selectedMessage.status
                 }
                 disabled={
-                  updatingId ===
-                  selectedMessage.id
+                  updatingId !==
+                  null
                 }
                 onChange={(
                   event

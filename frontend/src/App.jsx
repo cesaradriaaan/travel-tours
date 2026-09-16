@@ -27,8 +27,6 @@ import MyBookingDetail from "./pages/MyBookingDetail";
 import AdminBookings from "./pages/AdminBookings";
 import AdminMessages from "./pages/AdminMessages";
 
-import { checkBackendHealth } from "./services/api";
-
 const pageTitles = {
   "/": "AddyVenture Travel & Tours",
   "/tours": "Tours | AddyVenture",
@@ -70,22 +68,6 @@ function RouteEffects() {
 }
 
 export default function App() {
-  useEffect(() => {
-    checkBackendHealth()
-      .then((data) => {
-        console.log(
-          "Backend connected:",
-          data
-        );
-      })
-      .catch((error) => {
-        console.error(
-          "Backend error:",
-          error
-        );
-      });
-  }, []);
-
   return (
     <>
       <RouteEffects />

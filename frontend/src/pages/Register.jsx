@@ -1,4 +1,7 @@
-import { useState } from "react";
+import {
+  useRef,
+  useState,
+} from "react";
 import {
   Link,
   Navigate,
@@ -13,6 +16,7 @@ export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading } = useAuth();
+  const submitLockRef = useRef(false);
 
   const from = location.state?.from || "/";
 
@@ -54,6 +58,10 @@ export default function Register() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (submitLockRef.current) {
+      return;
+    }
+
     const fullName = form.fullName.trim();
     const email = form.email.trim();
 
@@ -76,6 +84,8 @@ export default function Register() {
       setError("Passwords do not match.");
       return;
     }
+
+    submitLockRef.current = true;
 
     try {
       setSubmitting(true);
@@ -115,6 +125,7 @@ export default function Register() {
     } catch (error) {
       setError(error.message || "Unable to create account.");
     } finally {
+      submitLockRef.current = false;
       setSubmitting(false);
     }
   }
@@ -157,6 +168,7 @@ export default function Register() {
             onChange={updateField}
             autoComplete="name"
             required
+            disabled={submitting}
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -175,6 +187,7 @@ export default function Register() {
             onChange={updateField}
             autoComplete="email"
             required
+            disabled={submitting}
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -193,6 +206,7 @@ export default function Register() {
             onChange={updateField}
             autoComplete="new-password"
             required
+            disabled={submitting}
             style={{
               width: "100%",
               padding: "0.85rem",
@@ -211,6 +225,7 @@ export default function Register() {
             onChange={updateField}
             autoComplete="new-password"
             required
+            disabled={submitting}
             style={{
               width: "100%",
               padding: "0.85rem",

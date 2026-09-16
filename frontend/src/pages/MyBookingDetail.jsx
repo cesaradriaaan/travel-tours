@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Link,
   useParams,
@@ -247,6 +251,8 @@ function StatusBadge({ status }) {
 
 export default function MyBookingDetail() {
   const { id } = useParams();
+  const cancellationLockRef =
+    useRef(false);
 
   const [booking, setBooking] =
     useState(null);
@@ -284,7 +290,8 @@ export default function MyBookingDetail() {
 
 
   useEffect(() => {
-    let active = true;
+    const controller =
+      new AbortController();
 
     async function loadBooking() {
       try {
@@ -292,9 +299,17 @@ export default function MyBookingDetail() {
         setError("");
 
         const data =
-          await getMyBookingById(id);
+          await getMyBookingById(
+            id,
+            {
+              signal:
+                controller.signal,
+            }
+          );
 
-        if (!active) {
+        if (
+          controller.signal.aborted
+        ) {
           return;
         }
 
@@ -304,7 +319,9 @@ export default function MyBookingDetail() {
             data
         );
       } catch (err) {
-        if (!active) {
+        if (
+          controller.signal.aborted
+        ) {
           return;
         }
 
@@ -318,7 +335,9 @@ export default function MyBookingDetail() {
             "Unable to load this booking."
         );
       } finally {
-        if (active) {
+        if (
+          !controller.signal.aborted
+        ) {
           setLoading(false);
         }
       }
@@ -327,7 +346,7 @@ export default function MyBookingDetail() {
     loadBooking();
 
     return () => {
-      active = false;
+      controller.abort();
     };
   }, [id]);
 
@@ -337,9 +356,14 @@ export default function MyBookingDetail() {
   ) {
     event.preventDefault();
 
-    if (cancellationLoading) {
+    if (
+      cancellationLockRef.current
+    ) {
       return;
     }
+
+    cancellationLockRef.current =
+      true;
 
     try {
       setCancellationLoading(true);
@@ -374,6 +398,9 @@ export default function MyBookingDetail() {
           "Unable to submit cancellation request."
       );
     } finally {
+      cancellationLockRef.current =
+        false;
+
       setCancellationLoading(false);
     }
   }

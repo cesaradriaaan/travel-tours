@@ -22,7 +22,10 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabaseClient";
-import { redeemVoucher } from "../services/api";
+import {
+  getMyVouchers,
+  redeemVoucher,
+} from "../services/api";
 
 import ConfirmModal from "../components/ConfirmModal";
 
@@ -32,6 +35,14 @@ import "./Account.css";
 export default function Account() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const voucherLoadAbortRef =
+    useRef(null);
+  const uploadLockRef =
+    useRef(false);
+  const redeemLockRef =
+    useRef(false);
+  const logoutLockRef =
+    useRef(false);
 
   const {
     user,
@@ -79,6 +90,11 @@ export default function Account() {
   ] = useState(true);
 
   const [
+    voucherLoadError,
+    setVoucherLoadError,
+  ] = useState("");
+
+  const [
     logoutModalOpen,
     setLogoutModalOpen,
   ] = useState(false);
@@ -102,57 +118,88 @@ export default function Account() {
 
 
   useEffect(() => {
+    if (isAdmin) {
+      voucherLoadAbortRef
+        .current
+        ?.abort();
+
+      voucherLoadAbortRef.current =
+        null;
+
+      setLoadingVouchers(false);
+      return undefined;
+    }
+
     loadVouchers();
-  }, []);
+
+    return () => {
+      voucherLoadAbortRef
+        .current
+        ?.abort();
+    };
+  }, [isAdmin]);
 
 
   async function loadVouchers() {
+    voucherLoadAbortRef
+      .current
+      ?.abort();
+
+    const controller =
+      new AbortController();
+
+    voucherLoadAbortRef.current =
+      controller;
+
     try {
       setLoadingVouchers(true);
+      setVoucherLoadError("");
 
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("user_vouchers")
-        .select(`
-          id,
-          status,
-          claimed_at,
-          used_at,
-          voucher:vouchers (
-            id,
-            code,
-            title,
-            description,
-            discount_type,
-            discount_value,
-            minimum_spend,
-            maximum_discount,
-            valid_until
-          )
-        `)
-        .order(
-          "claimed_at",
-          {
-            ascending: false,
-          }
-        );
+      const data =
+        await getMyVouchers({
+          signal:
+            controller.signal,
+        });
 
-      if (error) {
-        throw error;
+      if (
+        controller.signal.aborted
+      ) {
+        return;
       }
 
       setVouchers(
-        data || []
+        data.vouchers || []
       );
     } catch (error) {
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
       console.error(
         "Unable to load vouchers:",
         error
       );
+
+      setVoucherLoadError(
+        error?.message ||
+          "Unable to load your vouchers."
+      );
     } finally {
-      setLoadingVouchers(false);
+      if (
+        voucherLoadAbortRef.current ===
+        controller
+      ) {
+        voucherLoadAbortRef.current =
+          null;
+
+        if (
+          !controller.signal.aborted
+        ) {
+          setLoadingVouchers(false);
+        }
+      }
     }
   }
 
@@ -164,6 +211,10 @@ export default function Account() {
       event.target.files?.[0];
 
     if (!file || !user) {
+      return;
+    }
+
+    if (uploadLockRef.current) {
       return;
     }
 
@@ -195,6 +246,9 @@ export default function Account() {
 
       return;
     }
+
+    uploadLockRef.current =
+      true;
 
     try {
       setUploadingAvatar(true);
@@ -276,6 +330,9 @@ export default function Account() {
           "Unable to upload profile picture."
       );
     } finally {
+      uploadLockRef.current =
+        false;
+
       setUploadingAvatar(false);
 
       if (
@@ -293,7 +350,7 @@ export default function Account() {
   ) {
     event.preventDefault();
 
-    if (redeeming) {
+    if (redeemLockRef.current) {
       return;
     }
 
@@ -317,6 +374,9 @@ export default function Account() {
 
       return;
     }
+
+    redeemLockRef.current =
+      true;
 
     try {
       setRedeeming(true);
@@ -351,6 +411,9 @@ export default function Account() {
           "Unable to redeem voucher."
       );
     } finally {
+      redeemLockRef.current =
+        false;
+
       setRedeeming(false);
     }
   }
@@ -363,9 +426,12 @@ export default function Account() {
 
 
   async function handleLogout() {
-    if (loggingOut) {
+    if (logoutLockRef.current) {
       return;
     }
+
+    logoutLockRef.current =
+      true;
 
     try {
       setLoggingOut(true);
@@ -394,6 +460,9 @@ export default function Account() {
           "Unable to log out. Please try again."
       );
     } finally {
+      logoutLockRef.current =
+        false;
+
       setLoggingOut(false);
     }
   }
@@ -425,16 +494,16 @@ export default function Account() {
     }
 
     if (
-      voucher.discount_type ===
+      voucher.discountType ===
       "percentage"
     ) {
       return `${Number(
-        voucher.discount_value
+        voucher.discountValue
       )}% OFF`;
     }
 
     return `₱${Number(
-      voucher.discount_value
+      voucher.discountValue
     ).toLocaleString()} OFF`;
   }
 
@@ -703,6 +772,20 @@ export default function Account() {
 
 
                 {!loadingVouchers &&
+                  voucherLoadError && (
+                    <p
+                      className="account-error"
+                      role="alert"
+                    >
+                      {
+                        voucherLoadError
+                      }
+                    </p>
+                  )}
+
+
+                {!loadingVouchers &&
+                  !voucherLoadError &&
                   vouchers.length ===
                     0 && (
                     <div>
@@ -769,7 +852,7 @@ export default function Account() {
                           )}
 
                           {Number(
-                            voucher.minimum_spend
+                            voucher.minimumSpend
                           ) >
                             0 && (
                             <small
@@ -793,7 +876,7 @@ export default function Account() {
                               Min. spend
                               ₱
                               {Number(
-                                voucher.minimum_spend
+                                voucher.minimumSpend
                               ).toLocaleString()}
                             </small>
                           )}

@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -251,6 +252,18 @@ function StatusBadge({
 
 
 export default function AdminBookings() {
+  const bookingsAbortRef =
+    useRef(null);
+
+  const detailsAbortRef =
+    useRef(null);
+
+  const statusLockRef =
+    useRef(false);
+
+  const cancellationLockRef =
+    useRef(false);
+
   const [
     bookings,
     setBookings,
@@ -309,27 +322,80 @@ export default function AdminBookings() {
 
   useEffect(() => {
     loadBookings();
+
+    return () => {
+      bookingsAbortRef
+        .current
+        ?.abort();
+
+      bookingsAbortRef.current =
+        null;
+
+      detailsAbortRef
+        .current
+        ?.abort();
+
+      detailsAbortRef.current =
+        null;
+    };
   }, []);
 
 
   async function loadBookings() {
+    if (bookingsAbortRef.current) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    bookingsAbortRef.current =
+      controller;
+
     try {
       setLoading(true);
       setError("");
       setActionMessage("");
 
       const result =
-        await getBookings();
+        await getBookings({
+          signal:
+            controller.signal,
+        });
+
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
 
       setBookings(
         result.bookings || []
       );
     } catch (err) {
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
       setError(
         err.message
       );
     } finally {
-      setLoading(false);
+      if (
+        bookingsAbortRef.current ===
+        controller
+      ) {
+        bookingsAbortRef.current =
+          null;
+
+        if (
+          !controller.signal.aborted
+        ) {
+          setLoading(false);
+        }
+      }
     }
   }
 
@@ -338,6 +404,26 @@ export default function AdminBookings() {
     id,
     status
   ) {
+    if (statusLockRef.current) {
+      return;
+    }
+
+    const currentBooking =
+      bookings.find(
+        (booking) =>
+          booking.id === id
+      );
+
+    if (
+      currentBooking?.status ===
+      status
+    ) {
+      return;
+    }
+
+    statusLockRef.current =
+      true;
+
     try {
       setUpdatingId(id);
       setError("");
@@ -378,6 +464,9 @@ export default function AdminBookings() {
         err.message
       );
     } finally {
+      statusLockRef.current =
+        false;
+
       setUpdatingId(null);
     }
   }
@@ -386,25 +475,64 @@ export default function AdminBookings() {
   async function handleViewDetails(
     id
   ) {
+    if (detailsAbortRef.current) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    detailsAbortRef.current =
+      controller;
+
     try {
       setDetailsLoading(true);
       setError("");
       setActionMessage("");
+      setSelectedBooking(null);
 
       const result =
         await getBookingById(
-          id
+          id,
+          {
+            signal:
+              controller.signal,
+          }
         );
+
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
 
       setSelectedBooking(
         result.booking
       );
     } catch (err) {
+      if (
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
       setError(
         err.message
       );
     } finally {
-      setDetailsLoading(false);
+      if (
+        detailsAbortRef.current ===
+        controller
+      ) {
+        detailsAbortRef.current =
+          null;
+
+        if (
+          !controller.signal.aborted
+        ) {
+          setDetailsLoading(false);
+        }
+      }
     }
   }
 
@@ -413,10 +541,13 @@ export default function AdminBookings() {
     if (
       !selectedBooking ||
       !confirmDecision ||
-      resolvingCancellation
+      cancellationLockRef.current
     ) {
       return;
     }
+
+    cancellationLockRef.current =
+      true;
 
     try {
       setResolvingCancellation(
@@ -478,6 +609,9 @@ export default function AdminBookings() {
         err.message
       );
     } finally {
+      cancellationLockRef.current =
+        false;
+
       setResolvingCancellation(
         false
       );
@@ -757,11 +891,14 @@ export default function AdminBookings() {
           <button
             className="btn btn-secondary"
             type="button"
-            onClick={
-              loadBookings
+            onClick={() =>
+              loadBookings()
             }
+            disabled={loading}
           >
-            Refresh
+            {loading
+              ? "Refreshing..."
+              : "Refresh"}
           </button>
         </div>
 
@@ -899,8 +1036,8 @@ export default function AdminBookings() {
                               booking
                             }
                             disabled={
-                              updatingId ===
-                              booking.id
+                              updatingId !==
+                              null
                             }
                             onChange={(
                               event
@@ -920,6 +1057,9 @@ export default function AdminBookings() {
                         <button
                           type="button"
                           className="btn btn-secondary"
+                          disabled={
+                            detailsLoading
+                          }
                           onClick={() =>
                             handleViewDetails(
                               booking.id

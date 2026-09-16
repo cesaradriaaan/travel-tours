@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -754,6 +759,9 @@ function StepIndicator({
 }
 
 export default function Booking() {
+  const submitLockRef =
+    useRef(false);
+
   const {
     tripPlan,
     tripSessionId,
@@ -976,6 +984,9 @@ export default function Booking() {
     totalItems === 0;
 
   useEffect(() => {
+    const controller =
+      new AbortController();
+
     async function loadVouchers() {
       try {
         setVouchersLoading(
@@ -987,13 +998,28 @@ export default function Booking() {
         );
 
         const data =
-          await getMyVouchers();
+          await getMyVouchers({
+            signal:
+              controller.signal,
+          });
+
+        if (
+          controller.signal.aborted
+        ) {
+          return;
+        }
 
         setVouchers(
           data.vouchers ||
             []
         );
       } catch (error) {
+        if (
+          controller.signal.aborted
+        ) {
+          return;
+        }
+
         console.error(
           "Unable to load vouchers:",
           error
@@ -1004,13 +1030,21 @@ export default function Booking() {
             "Unable to load vouchers."
         );
       } finally {
-        setVouchersLoading(
-          false
-        );
+        if (
+          !controller.signal.aborted
+        ) {
+          setVouchersLoading(
+            false
+          );
+        }
       }
     }
 
     loadVouchers();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -1246,10 +1280,13 @@ export default function Booking() {
   const handleConfirm =
     async () => {
       if (
-        isSubmitting
+        submitLockRef.current
       ) {
         return;
       }
+
+      submitLockRef.current =
+        true;
 
       setIsSubmitting(
         true
@@ -1426,6 +1463,9 @@ export default function Booking() {
             "Unable to send booking request. Please try again."
         );
       } finally {
+        submitLockRef.current =
+          false;
+
         setIsSubmitting(
           false
         );

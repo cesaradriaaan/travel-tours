@@ -1,4 +1,7 @@
-import { useState } from "react";
+import {
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowRight,
   Compass,
@@ -19,14 +22,14 @@ import {
 
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { loginWithPassword } from "../services/api";
 import "./Login.css";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading } = useAuth();
+  const submitLockRef = useRef(false);
 
   const from = location.state?.from || "/";
   const message = location.state?.message || "";
@@ -68,36 +71,21 @@ export default function Login() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (submitting) {
+    if (submitLockRef.current) {
       return;
     }
+
+    submitLockRef.current = true;
 
     try {
       setSubmitting(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/api/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: form.email.trim(),
-          password: form.password,
-        }),
-      });
-
-      const contentType = response.headers.get("content-type") || "";
-
-      if (!contentType.includes("application/json")) {
-        throw new Error("The server returned an unexpected response.");
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to log in.");
-      }
+      const data =
+        await loginWithPassword(
+          form.email.trim(),
+          form.password
+        );
 
       if (!data.session?.accessToken || !data.session?.refreshToken) {
         throw new Error(
@@ -120,6 +108,7 @@ export default function Login() {
         loginError.message || "Unable to log in. Please try again."
       );
     } finally {
+      submitLockRef.current = false;
       setSubmitting(false);
     }
   }

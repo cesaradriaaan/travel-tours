@@ -15,25 +15,52 @@ export default function MyBookings() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const controller =
+      new AbortController();
+
     async function loadBookings() {
       try {
         setLoading(true);
         setError("");
 
-        const data = await getMyBookings();
+        const data =
+          await getMyBookings({
+            signal:
+              controller.signal,
+          });
+
+        if (
+          controller.signal.aborted
+        ) {
+          return;
+        }
 
         setBookings(data.bookings || []);
       } catch (error) {
+        if (
+          controller.signal.aborted
+        ) {
+          return;
+        }
+
         setError(
           error.message ||
             "Unable to load your bookings."
         );
       } finally {
-        setLoading(false);
+        if (
+          !controller.signal.aborted
+        ) {
+          setLoading(false);
+        }
       }
     }
 
     loadBookings();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   function formatDate(date) {
