@@ -14,6 +14,42 @@ const rateLimit =
 
 require("dotenv").config();
 
+const isProduction =
+  process.env.NODE_ENV ===
+  "production";
+
+const requiredEnvironmentVariables = [
+  "SUPABASE_URL",
+  "SUPABASE_SECRET_KEY",
+];
+
+if (isProduction) {
+  requiredEnvironmentVariables.push(
+    "ALLOWED_ORIGINS",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL"
+  );
+}
+
+const missingEnvironmentVariables =
+  requiredEnvironmentVariables.filter(
+    (name) =>
+      !String(
+        process.env[name] || ""
+      ).trim()
+  );
+
+if (
+  missingEnvironmentVariables.length >
+  0
+) {
+  throw new Error(
+    `Missing required server environment variables: ${missingEnvironmentVariables.join(
+      ", "
+    )}`
+  );
+}
+
 const supabase = require("./supabase");
 
 const app = express();
@@ -23,13 +59,218 @@ const resend = new Resend(
 );
 
 
+// Keep production logs useful without printing request bodies,
+// credentials, personal data, or raw provider/database errors.
+function logServerError(
+  event,
+  error = null
+) {
+  const safeEvent =
+    String(event || "Server error")
+      .replace(/[\r\n]+/g, " ")
+      .slice(0, 160);
+
+  const metadata = {
+    level: "error",
+    event: safeEvent,
+  };
+
+  if (
+    error &&
+    typeof error === "object"
+  ) {
+    if (error.name) {
+      metadata.name =
+        String(error.name)
+          .slice(0, 80);
+    }
+
+    if (error.code) {
+      metadata.code =
+        String(error.code)
+          .slice(0, 80);
+    }
+
+    if (
+      Number.isInteger(
+        error.status
+      )
+    ) {
+      metadata.status =
+        error.status;
+    }
+  }
+
+  console.error(
+    JSON.stringify(metadata)
+  );
+}
+
+
 // =====================================================
 // BASIC APP SECURITY / REQUEST LIMITS
 // =====================================================
 
 app.disable("x-powered-by");
 
-app.use(cors());
+const localDevelopmentOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+];
+
+
+function normalizeOrigin(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
+
+const configuredOrigins =
+  String(
+    process.env.ALLOWED_ORIGINS ||
+      ""
+  )
+    .split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
+
+const allowedOrigins = new Set([
+  ...configuredOrigins,
+
+  ...(isProduction
+    ? []
+    : localDevelopmentOrigins),
+]);
+
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    // Server-to-server tools and same-origin requests
+    // do not always send an Origin header.
+    return true;
+  }
+
+  return allowedOrigins.has(
+    normalizeOrigin(origin)
+  );
+}
+
+
+// API responses never need to be embedded in another site.
+// These headers provide a dependency-free baseline similar
+// to Helmet while keeping the existing package setup intact.
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+  );
+
+  res.setHeader(
+    "X-Content-Type-Options",
+    "nosniff"
+  );
+
+  res.setHeader(
+    "X-Frame-Options",
+    "DENY"
+  );
+
+  res.setHeader(
+    "Referrer-Policy",
+    "no-referrer"
+  );
+
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()"
+  );
+
+  res.setHeader(
+    "X-DNS-Prefetch-Control",
+    "off"
+  );
+
+  res.setHeader(
+    "X-Permitted-Cross-Domain-Policies",
+    "none"
+  );
+
+  res.setHeader(
+    "Cache-Control",
+    "no-store"
+  );
+
+  if (isProduction) {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains"
+    );
+  }
+
+  next();
+});
+
+
+// Reject browser requests from unapproved origins before
+// any route, rate limiter, database call, or email action.
+app.use((req, res, next) => {
+  const origin =
+    req.headers.origin;
+
+  if (
+    !isAllowedOrigin(origin)
+  ) {
+    return res.status(403).json({
+      success: false,
+      message:
+        "This origin is not allowed to access the API.",
+    });
+  }
+
+  return next();
+});
+
+
+app.use(
+  cors({
+    origin:
+      (origin, callback) => {
+        callback(
+          null,
+          isAllowedOrigin(origin)
+        );
+      },
+
+    methods: [
+      "GET",
+      "POST",
+      "PATCH",
+      "OPTIONS",
+    ],
+
+    allowedHeaders: [
+      "Accept",
+      "Authorization",
+      "Content-Type",
+      "Idempotency-Key",
+    ],
+
+    exposedHeaders: [
+      "RateLimit",
+      "RateLimit-Policy",
+      "Retry-After",
+    ],
+
+    maxAge:
+      24 * 60 * 60,
+
+    optionsSuccessStatus:
+      204,
+  })
+);
 
 
 // =====================================================
@@ -389,7 +630,7 @@ async function requireAuth(
 
     next();
   } catch (error) {
-    console.error(
+    logServerError(
       "Authentication error:",
       error
     );
@@ -481,7 +722,7 @@ async function requireAdmin(
 
     next();
   } catch (error) {
-    console.error(
+    logServerError(
       "Admin authentication error:",
       error
     );
@@ -955,7 +1196,7 @@ async function requireBookingIdempotencyKey(
     if (
       existingBookingError
     ) {
-      console.error(
+      logServerError(
         "Booking idempotency lookup error:",
         existingBookingError
       );
@@ -986,7 +1227,7 @@ async function requireBookingIdempotencyKey(
 
     return next();
   } catch (error) {
-    console.error(
+    logServerError(
       "Booking idempotency error:",
       error
     );
@@ -1057,7 +1298,7 @@ app.post(
         !supabaseUrl ||
         !supabaseSecretKey
       ) {
-        console.error(
+        logServerError(
           "Login configuration error: missing Supabase environment variables."
         );
 
@@ -1096,7 +1337,7 @@ app.post(
         authData =
           await authResponse.json();
       } catch (parseError) {
-        console.error(
+        logServerError(
           "Login response parse error:",
           parseError
         );
@@ -1169,7 +1410,7 @@ app.post(
           });
         }
 
-        console.error(
+        logServerError(
           "Supabase login error:",
           {
             status:
@@ -1192,7 +1433,7 @@ app.post(
         !authData?.access_token ||
         !authData?.refresh_token
       ) {
-        console.error(
+        logServerError(
           "Login response missing session tokens."
         );
 
@@ -1231,7 +1472,7 @@ app.post(
           : null,
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Login error:",
         error
       );
@@ -1287,7 +1528,7 @@ app.get(
           );
 
       if (error) {
-        console.error(
+        logServerError(
           "Supabase error:",
           error
         );
@@ -1311,7 +1552,7 @@ app.get(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get bookings error:",
         error
       );
@@ -1366,7 +1607,7 @@ app.get(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get booking error:",
         error
       );
@@ -1430,7 +1671,7 @@ app.get(
           );
 
       if (error) {
-        console.error(
+        logServerError(
           "Get vouchers error:",
           error
         );
@@ -1456,7 +1697,7 @@ app.get(
         vouchers,
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get vouchers error:",
         error
       );
@@ -1524,7 +1765,7 @@ app.post(
         );
 
       if (error) {
-        console.error(
+        logServerError(
           "Redeem voucher error:",
           error
         );
@@ -1556,7 +1797,7 @@ app.post(
           null,
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Redeem voucher error:",
         error
       );
@@ -1589,16 +1830,170 @@ app.post(
       const bookingData =
         req.body;
 
+      const travelerName =
+        typeof bookingData
+          ?.travelerName ===
+        "string"
+          ? bookingData.travelerName
+              .trim()
+          : "";
+
+      const email =
+        typeof bookingData
+          ?.email === "string"
+          ? bookingData.email
+              .trim()
+              .toLowerCase()
+          : "";
+
+      const phone =
+        typeof bookingData
+          ?.phone === "string"
+          ? bookingData.phone
+              .trim()
+          : "";
+
+      const nationality =
+        typeof bookingData
+          ?.nationality ===
+        "string"
+          ? bookingData.nationality
+              .trim()
+          : "";
+
+      const travelDate =
+        typeof bookingData
+          ?.travelDate ===
+        "string"
+          ? bookingData.travelDate
+              .trim()
+          : "";
+
       if (
-        !bookingData.travelerName ||
-        !bookingData.email ||
-        !bookingData.phone ||
-        !bookingData.travelDate
+        !travelerName ||
+        !email ||
+        !phone ||
+        !travelDate
       ) {
         return res.status(400).json({
           success: false,
           message:
             "Traveler name, email, phone, and travel date are required.",
+        });
+      }
+
+      if (
+        travelerName.length >
+          120 ||
+        email.length > 254 ||
+        phone.length > 30 ||
+        nationality.length >
+          100 ||
+        !/^\S+@\S+\.\S+$/.test(
+          email
+        ) ||
+        !/^[0-9+().\-\s]{7,30}$/.test(
+          phone
+        ) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(
+          travelDate
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "One or more traveler details are invalid.",
+        });
+      }
+
+      const rawTraveler =
+        bookingData.traveler &&
+        typeof bookingData
+          .traveler === "object" &&
+        !Array.isArray(
+          bookingData.traveler
+        )
+          ? bookingData.traveler
+          : {};
+
+      const adults =
+        Number(
+          rawTraveler.adults
+        );
+
+      const children =
+        Number(
+          rawTraveler.children ||
+            0
+        );
+
+      const infants =
+        Number(
+          rawTraveler.infants ||
+            0
+        );
+
+      const emergencyName =
+        typeof rawTraveler
+          .emergencyName ===
+        "string"
+          ? rawTraveler.emergencyName
+              .trim()
+          : "";
+
+      const emergencyPhone =
+        typeof rawTraveler
+          .emergencyPhone ===
+        "string"
+          ? rawTraveler.emergencyPhone
+              .trim()
+          : "";
+
+      const specialRequests =
+        typeof rawTraveler
+          .specialRequests ===
+        "string"
+          ? rawTraveler.specialRequests
+              .trim()
+          : "";
+
+      if (
+        !Number.isInteger(
+          adults
+        ) ||
+        adults < 1 ||
+        adults > 50 ||
+        !Number.isInteger(
+          children
+        ) ||
+        children < 0 ||
+        children > 50 ||
+        !Number.isInteger(
+          infants
+        ) ||
+        infants < 0 ||
+        infants > 50 ||
+        emergencyName.length >
+          120 ||
+        emergencyPhone.length >
+          30 ||
+        specialRequests.length >
+          2000 ||
+        Boolean(emergencyName) !==
+          Boolean(
+            emergencyPhone
+          ) ||
+        (
+          emergencyPhone &&
+          !/^[0-9+().\-\s]{7,30}$/.test(
+            emergencyPhone
+          )
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "One or more booking details are invalid.",
         });
       }
 
@@ -1622,7 +2017,13 @@ app.post(
           travelerCount
         ) ||
         travelerCount <
-          1
+          1 ||
+        travelerCount >
+          100 ||
+        travelerCount !==
+          adults +
+            children +
+            infants
       ) {
         return res.status(400).json({
           success: false,
@@ -1812,20 +2213,20 @@ app.post(
                 bookingReference,
 
               traveler_name:
-                bookingData.travelerName,
+                travelerName,
 
               email:
-                bookingData.email,
+                email,
 
               phone:
-                bookingData.phone,
+                phone,
 
               nationality:
-                bookingData.nationality ||
+                nationality ||
                 null,
 
               travel_date:
-                bookingData.travelDate,
+                travelDate,
 
               travel_end_date:
                 bookingData.travelEndDate ||
@@ -1863,7 +2264,23 @@ app.post(
                 "Request Received",
 
               traveler:
-                bookingData.traveler,
+                {
+                  adults,
+                  children,
+                  infants,
+
+                  emergencyName:
+                    emergencyName ||
+                    null,
+
+                  emergencyPhone:
+                    emergencyPhone ||
+                    null,
+
+                  specialRequests:
+                    specialRequests ||
+                    null,
+                },
 
               trip_plan:
                 bookingData.tripPlan,
@@ -1916,7 +2333,7 @@ app.post(
           }
         }
 
-        console.error(
+        logServerError(
           "Supabase booking error:",
           error
         );
@@ -1973,7 +2390,7 @@ app.post(
           voucherUpdateError ||
           !usedVoucher
         ) {
-          console.error(
+          logServerError(
             "Voucher usage error:",
             voucherUpdateError
           );
@@ -1993,7 +2410,7 @@ app.post(
           if (
             rollbackError
           ) {
-            console.error(
+            logServerError(
               "Booking rollback error:",
               rollbackError
             );
@@ -2022,7 +2439,7 @@ app.post(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Booking error:",
         error
       );
@@ -2068,7 +2485,7 @@ app.get(
           );
 
       if (error) {
-        console.error(
+        logServerError(
           "Get my bookings error:",
           error
         );
@@ -2092,7 +2509,7 @@ app.get(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get my bookings error:",
         error
       );
@@ -2154,7 +2571,7 @@ app.get(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get my booking error:",
         error
       );
@@ -2319,7 +2736,7 @@ app.post(
         updateError ||
         !updatedBooking
       ) {
-        console.error(
+        logServerError(
           "Cancellation request error:",
           updateError
         );
@@ -2343,7 +2760,7 @@ app.post(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Request cancellation error:",
         error
       );
@@ -2490,7 +2907,7 @@ app.post(
           rejectError ||
           !rejectedBooking
         ) {
-          console.error(
+          logServerError(
             "Reject cancellation error:",
             rejectError
           );
@@ -2553,7 +2970,7 @@ app.post(
         cancelError ||
         !cancelledBooking
       ) {
-        console.error(
+        logServerError(
           "Approve cancellation error:",
           cancelError
         );
@@ -2599,7 +3016,7 @@ app.post(
         if (
           voucherError
         ) {
-          console.error(
+          logServerError(
             "Voucher lookup during cancellation:",
             voucherError
           );
@@ -2675,7 +3092,7 @@ app.post(
             if (
               restoreVoucherError
             ) {
-              console.error(
+              logServerError(
                 "Voucher restoration error:",
                 restoreVoucherError
               );
@@ -2714,7 +3131,7 @@ app.post(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Resolve cancellation error:",
         error
       );
@@ -2785,7 +3202,7 @@ app.patch(
           .single();
 
       if (error) {
-        console.error(
+        logServerError(
           "Supabase update error:",
           error
         );
@@ -2809,7 +3226,7 @@ app.patch(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Update booking error:",
         error
       );
@@ -2895,7 +3312,7 @@ app.post(
           .single();
 
       if (error) {
-        console.error(
+        logServerError(
           "Contact message error:",
           error
         );
@@ -2919,7 +3336,7 @@ app.post(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Contact error:",
         error
       );
@@ -2963,7 +3380,7 @@ app.get(
           );
 
       if (error) {
-        console.error(
+        logServerError(
           "Get contact messages error:",
           error
         );
@@ -2987,7 +3404,7 @@ app.get(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get contact messages error:",
         error
       );
@@ -3068,7 +3485,7 @@ app.get(
       if (
         repliesError
       ) {
-        console.error(
+        logServerError(
           "Get reply history error:",
           repliesError
         );
@@ -3094,7 +3511,7 @@ app.get(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Get contact message error:",
         error
       );
@@ -3162,7 +3579,7 @@ app.patch(
           .single();
 
       if (error) {
-        console.error(
+        logServerError(
           "Update contact message error:",
           error
         );
@@ -3186,7 +3603,7 @@ app.patch(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Update contact message error:",
         error
       );
@@ -3302,7 +3719,7 @@ app.post(
       if (
         emailError
       ) {
-        console.error(
+        logServerError(
           "Resend email error:",
           emailError
         );
@@ -3347,7 +3764,7 @@ app.post(
       if (
         replyError
       ) {
-        console.error(
+        logServerError(
           "Save reply error:",
           replyError
         );
@@ -3379,7 +3796,7 @@ app.post(
       if (
         statusError
       ) {
-        console.error(
+        logServerError(
           "Update replied status error:",
           statusError
         );
@@ -3397,7 +3814,7 @@ app.post(
           ),
       });
     } catch (error) {
-      console.error(
+      logServerError(
         "Send reply error:",
         error
       );

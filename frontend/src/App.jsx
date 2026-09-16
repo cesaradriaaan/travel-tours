@@ -17,6 +17,9 @@ import PlanTrip from "./pages/PlanTrip";
 import Booking from "./pages/Booking";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
+import CancellationPolicy from "./pages/CancellationPolicy";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -34,6 +37,12 @@ const pageTitles = {
   "/booking": "Booking | AddyVenture",
   "/about": "About | AddyVenture",
   "/contact": "Contact | AddyVenture",
+  "/privacy-policy":
+    "Privacy Policy | AddyVenture",
+  "/terms":
+    "Terms & Conditions | AddyVenture",
+  "/cancellation-policy":
+    "Cancellation Policy | AddyVenture",
 
   "/login": "Login | AddyVenture",
   "/register": "Create Account | AddyVenture",
@@ -147,6 +156,21 @@ export default function App() {
           <Route
             path="/contact"
             element={<Contact />}
+          />
+
+          <Route
+            path="/privacy-policy"
+            element={<PrivacyPolicy />}
+          />
+
+          <Route
+            path="/terms"
+            element={<Terms />}
+          />
+
+          <Route
+            path="/cancellation-policy"
+            element={<CancellationPolicy />}
           />
 
           <Route

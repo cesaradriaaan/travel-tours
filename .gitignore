@@ -1,1 +1,24 @@
+# Dependencies and generated builds
 node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Environment files may contain credentials.
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Safe placeholder files may stay in Git.
+!.env.example
+!**/.env.example
+!*.env.example
+!**/*.env.example
+
+# Logs and local OS/editor files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/

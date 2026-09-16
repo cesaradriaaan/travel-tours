@@ -32,6 +32,9 @@ export default function Footer() {
             <ul>
               <li><Link to="/contact">Contact</Link></li>
               <li><Link to="/booking">Book Now</Link></li>
+              <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+              <li><Link to="/terms">Terms &amp; Conditions</Link></li>
+              <li><Link to="/cancellation-policy">Cancellation Policy</Link></li>
             </ul>
           </div>
 

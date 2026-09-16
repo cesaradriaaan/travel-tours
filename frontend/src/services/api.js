@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
+import { reportClientIssue } from "../lib/clientLogger";
 
 const API_URL =
   import.meta.env.VITE_API_URL;
@@ -59,16 +60,9 @@ async function readJsonResponse(
       "application/json"
     )
   ) {
-    const text =
-      await response.text();
-
-    console.error(
-      "Unexpected API response:",
-      text.slice(
-        0,
-        300
-      )
-    );
+    // Consume the response without exposing an HTML error
+    // page or provider details in the browser console.
+    await response.text();
 
     throw new Error(
       "The server returned an unexpected response."
@@ -77,12 +71,7 @@ async function readJsonResponse(
 
   try {
     return await response.json();
-  } catch (error) {
-    console.error(
-      "Invalid API JSON response:",
-      error
-    );
-
+  } catch {
     throw new Error(
       "The server returned invalid data."
     );
@@ -512,7 +501,7 @@ function readPendingBookingRequest() {
       BOOKING_REQUEST_STORAGE_KEY
     );
   } catch (error) {
-    console.warn(
+    reportClientIssue(
       "Unable to read the pending booking request:",
       error
     );
@@ -534,7 +523,7 @@ function savePendingBookingRequest(
       JSON.stringify(request)
     );
   } catch (error) {
-    console.warn(
+    reportClientIssue(
       "Unable to save the pending booking request:",
       error
     );
@@ -568,7 +557,7 @@ function clearPendingBookingRequest(
       BOOKING_REQUEST_STORAGE_KEY
     );
   } catch (error) {
-    console.warn(
+    reportClientIssue(
       "Unable to clear the pending booking request:",
       error
     );

@@ -27,6 +27,7 @@ import {
 
 import { useTrip } from "../context/TripContext";
 import { getTourById } from "../data/tours";
+import { reportClientIssue } from "../lib/clientLogger";
 import {
   createBooking,
   getMyVouchers,
@@ -100,7 +101,7 @@ function loadTraveler(
   tripSessionId
 ) {
   const raw = loadJson(
-    localStorage,
+    sessionStorage,
     DRAFT_KEY,
     null
   );
@@ -129,7 +130,7 @@ function loadStep(
 ) {
   try {
     const raw =
-      localStorage.getItem(
+      sessionStorage.getItem(
         STEP_KEY
       );
 
@@ -984,6 +985,23 @@ export default function Booking() {
     totalItems === 0;
 
   useEffect(() => {
+    // Older versions stored traveler PII persistently.
+    // Remove those legacy copies after migrating drafts
+    // to tab-scoped session storage.
+    try {
+      localStorage.removeItem(
+        DRAFT_KEY
+      );
+
+      localStorage.removeItem(
+        STEP_KEY
+      );
+    } catch {
+      // Storage cleanup is best-effort.
+    }
+  }, []);
+
+  useEffect(() => {
     const controller =
       new AbortController();
 
@@ -1020,7 +1038,7 @@ export default function Booking() {
           return;
         }
 
-        console.error(
+        reportClientIssue(
           "Unable to load vouchers:",
           error
         );
@@ -1056,7 +1074,7 @@ export default function Booking() {
     }
 
     try {
-      localStorage.setItem(
+      sessionStorage.setItem(
         DRAFT_KEY,
         JSON.stringify({
           tripSessionId,
@@ -1076,7 +1094,7 @@ export default function Booking() {
   useEffect(() => {
     if (step < 3) {
       try {
-        localStorage.setItem(
+        sessionStorage.setItem(
           STEP_KEY,
           JSON.stringify({
             tripSessionId,
@@ -1311,7 +1329,23 @@ export default function Booking() {
           traveler.travelDate,
 
         traveler: {
-          ...traveler,
+          adults:
+            traveler.adults,
+
+          children:
+            traveler.children,
+
+          infants:
+            traveler.infants,
+
+          emergencyName:
+            traveler.emergencyName,
+
+          emergencyPhone:
+            traveler.emergencyPhone,
+
+          specialRequests:
+            traveler.specialRequests,
         },
 
         tripPlan:
@@ -1365,7 +1399,11 @@ export default function Booking() {
               .status,
 
           traveler: {
-            ...traveler,
+            name:
+              traveler.name,
+
+            travelDate:
+              traveler.travelDate,
           },
 
           tripPlan:
@@ -1435,6 +1473,16 @@ export default function Booking() {
             )
           );
 
+          sessionStorage.removeItem(
+            DRAFT_KEY
+          );
+
+          sessionStorage.removeItem(
+            STEP_KEY
+          );
+
+          // Also remove legacy persistent copies created
+          // by older frontend versions.
           localStorage.removeItem(
             DRAFT_KEY
           );
@@ -1453,7 +1501,7 @@ export default function Booking() {
           behavior: "smooth",
         });
       } catch (error) {
-        console.error(
+        reportClientIssue(
           "Booking request failed:",
           error
         );
@@ -1477,6 +1525,14 @@ export default function Booking() {
       try {
         sessionStorage.removeItem(
           CONFIRMATION_KEY
+        );
+
+        sessionStorage.removeItem(
+          DRAFT_KEY
+        );
+
+        sessionStorage.removeItem(
+          STEP_KEY
         );
 
         localStorage.removeItem(

@@ -6,8 +6,42 @@ import {
 } from "react";
 
 import { supabase } from "../lib/supabaseClient";
+import { reportClientIssue } from "../lib/clientLogger";
 
 const AuthContext = createContext(null);
+
+const PRIVATE_SESSION_KEYS = [
+  "addyventure-booking-draft-v1",
+  "addyventure-booking-step-v1",
+  "addyventure-booking-confirmation-v1",
+  "addyventure.pendingBookingRequest",
+];
+
+const LEGACY_PRIVATE_LOCAL_KEYS = [
+  "addyventure-booking-draft-v1",
+  "addyventure-booking-step-v1",
+];
+
+
+function clearPrivateBookingStorage() {
+  for (
+    const key of
+      PRIVATE_SESSION_KEYS
+  ) {
+    sessionStorage.removeItem(
+      key
+    );
+  }
+
+  for (
+    const key of
+      LEGACY_PRIVATE_LOCAL_KEYS
+  ) {
+    localStorage.removeItem(
+      key
+    );
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -43,7 +77,7 @@ export function AuthProvider({ children }) {
 
         setUser(session?.user || null);
       } catch (error) {
-        console.error(
+        reportClientIssue(
           "Unable to initialize auth:",
           error
         );
@@ -115,7 +149,7 @@ export function AuthProvider({ children }) {
         if (!active) return;
 
         if (error) {
-          console.error(
+          reportClientIssue(
             "Unable to load profile:",
             error
           );
@@ -128,7 +162,7 @@ export function AuthProvider({ children }) {
       } catch (error) {
         if (!active) return;
 
-        console.error(
+        reportClientIssue(
           "Unable to load profile:",
           error
         );
@@ -164,6 +198,13 @@ export function AuthProvider({ children }) {
 
     if (error) {
       throw error;
+    }
+
+    try {
+      clearPrivateBookingStorage();
+    } catch {
+      // The auth session is already cleared. Storage
+      // cleanup remains best-effort for restricted browsers.
     }
   }
 

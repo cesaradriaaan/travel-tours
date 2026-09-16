@@ -10,7 +10,14 @@ if (!supabaseUrl || !supabaseSecretKey) {
 
 const supabase = createClient(
   supabaseUrl,
-  supabaseSecretKey
+  supabaseSecretKey,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  }
 );
 
 module.exports = supabase;

@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import { supabase } from "../lib/supabaseClient";
+import { getSafeInternalPath } from "../lib/safeNavigation";
 import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
@@ -18,7 +19,9 @@ export default function Register() {
   const { user, loading } = useAuth();
   const submitLockRef = useRef(false);
 
-  const from = location.state?.from || "/";
+  const from = getSafeInternalPath(
+    location.state?.from
+  );
 
   const [form, setForm] = useState({
     fullName: "",

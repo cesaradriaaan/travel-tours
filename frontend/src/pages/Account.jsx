@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
+import { reportClientIssue } from "../lib/clientLogger";
 import { supabase } from "../lib/supabaseClient";
 import {
   getMyVouchers,
@@ -177,7 +178,7 @@ export default function Account() {
         return;
       }
 
-      console.error(
+      reportClientIssue(
         "Unable to load vouchers:",
         error
       );
@@ -320,7 +321,7 @@ export default function Account() {
         newAvatarUrl
       );
     } catch (error) {
-      console.error(
+      reportClientIssue(
         "Avatar upload error:",
         error
       );
@@ -450,7 +451,7 @@ export default function Account() {
         }
       );
     } catch (error) {
-      console.error(
+      reportClientIssue(
         "Logout error:",
         error
       );

@@ -28,6 +28,7 @@ import {
   getMyBookingById,
   requestBookingCancellation,
 } from "../services/api";
+import { reportClientIssue } from "../lib/clientLogger";
 
 import "./MyBookingDetail.css";
 
@@ -325,7 +326,7 @@ export default function MyBookingDetail() {
           return;
         }
 
-        console.error(
+        reportClientIssue(
           "Unable to load booking:",
           err
         );
@@ -388,7 +389,7 @@ export default function MyBookingDetail() {
           "Cancellation request submitted. Please wait for admin approval."
       );
     } catch (err) {
-      console.error(
+      reportClientIssue(
         "Cancellation request error:",
         err
       );
