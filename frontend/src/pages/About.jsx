@@ -34,7 +34,7 @@ export default function About() {
             <span className="eyebrow">About AddyVenture</span>
             <h1>Travel planning that starts with your kind of adventure.</h1>
             <p className="about-hero__lead">
-              AddyVenture Travel &amp; Tours is built for travelers who want more say in the trip itself — not just a fixed package handed to them.
+              AddyVenture Travel &amp; Tours is built for travelers who want more say in the trip itself, not just a fixed package handed to them.
             </p>
             <div className="about-hero__actions">
               <Link to="/plan-trip" className="btn btn-primary">Build My Itinerary</Link>

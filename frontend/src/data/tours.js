@@ -11,9 +11,9 @@ export const tours = [
     durationDays: 3,
     price: 8500,
     images: [
-      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1200&q=80",
-      "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?w=1200&q=80",
-      "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1200&q=80",
+      "https://images.unsplash.com/photo-1695051702427-1c24ce3682e7?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1746260948448-d741c5838c16?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1697135756100-7b610c8fe92e?auto=format&fit=crop&w=1800&q=88",
     ],
     summary:
       "Cross lagoons by kayak, snorkel over coral gardens, and island-hop through El Nido's limestone cliffs.",
@@ -36,9 +36,9 @@ export const tours = [
     durationDays: 2,
     price: 6200,
     images: [
-      "https://i.pinimg.com/1200x/d0/c9/1a/d0c91af0bc467be04ced0aabe291b8c7.jpg",
-      "https://i.pinimg.com/1200x/d0/c9/1a/d0c91af0bc467be04ced0aabe291b8c7.jpg",
-      "https://i.pinimg.com/1200x/d0/c9/1a/d0c91af0bc467be04ced0aabe291b8c7.jpg",
+      "https://images.unsplash.com/photo-1728042743743-e2a2abf35c47?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1591506557489-e8ca407063e7?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1591506578484-d496b18a6908?auto=format&fit=crop&w=1800&q=88",
     ],
     summary:
       "Meet tarsiers, cruise the Loboc River, and watch the Chocolate Hills turn gold at sunset.",
@@ -60,9 +60,9 @@ export const tours = [
     durationDays: 4,
     price: 11200,
     images: [
-      "https://i.pinimg.com/1200x/5b/ce/41/5bce41ab96aca8c8ad88110b3dbfe08b.jpg",
-      "https://i.pinimg.com/1200x/5b/ce/41/5bce41ab96aca8c8ad88110b3dbfe08b.jpg",
-      "https://i.pinimg.com/1200x/5b/ce/41/5bce41ab96aca8c8ad88110b3dbfe08b.jpg",
+      "https://images.unsplash.com/photo-1565565915331-293fd8113954?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1601000234047-d9308ea1ed51?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1565340076637-825894a74ca6?auto=format&fit=crop&w=1800&q=88",
     ],
     summary:
       "Surf lessons at Cloud 9, island-hop to Naked Island, and swim in Sugba Lagoon's turquoise water.",
@@ -86,9 +86,9 @@ export const tours = [
     durationDays: 3,
     price: 9800,
     images: [
-      "https://i.pinimg.com/736x/df/61/ee/df61ee310dc961d0a01d3ff19661d73c.jpg",
-      "https://i.pinimg.com/736x/df/61/ee/df61ee310dc961d0a01d3ff19661d73c.jpg",
-      "https://i.pinimg.com/736x/df/61/ee/df61ee310dc961d0a01d3ff19661d73c.jpg",
+      "https://images.unsplash.com/photo-1663265159301-b9be59237e5f?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1714746093593-a4e9b4f72b6b?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1714746093239-4277ac0f1a48?auto=format&fit=crop&w=1800&q=88",
     ],
     summary:
       "Trek through the UNESCO-listed Batad rice terraces and stay in a traditional Ifugao village.",
@@ -111,9 +111,9 @@ export const tours = [
     durationDays: 2,
     price: 5400,
     images: [
-      "https://i.pinimg.com/736x/91/5b/a6/915ba6db319232b086fe96d8a7078b0b.jpg",
-      "https://i.pinimg.com/736x/91/5b/a6/915ba6db319232b086fe96d8a7078b0b.jpg",
-      "https://i.pinimg.com/736x/91/5b/a6/915ba6db319232b086fe96d8a7078b0b.jpg",
+      "https://images.unsplash.com/photo-1587659584959-fb5849fb6d26?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1648025125660-aaae6b420d25?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1589812635389-bba67781b7dd?auto=format&fit=crop&w=1800&q=88",
     ],
     summary:
       "Walk the cobblestone streets of Calle Crisologo and ride a kalesa through Spanish-era Vigan.",
@@ -135,9 +135,9 @@ export const tours = [
     durationDays: 3,
     price: 13500,
     images: [
-      "https://i.pinimg.com/736x/c2/6b/af/c26bafdb9622d198eac9bee6ec79bfbd.jpg",
-      "https://i.pinimg.com/736x/c2/6b/af/c26bafdb9622d198eac9bee6ec79bfbd.jpg",
-      "https://i.pinimg.com/736x/c2/6b/af/c26bafdb9622d198eac9bee6ec79bfbd.jpg",
+      "https://images.unsplash.com/photo-1637401637454-dc64f49a38ce?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1690462758002-d976200d4ada?auto=format&fit=crop&w=1800&q=88",
+      "https://images.unsplash.com/photo-1697558647054-e857470e2998?auto=format&fit=crop&w=1800&q=88",
     ],
     summary:
       "Dive WWII Japanese shipwrecks and swim in the Philippines' cleanest lake, Kayangan.",

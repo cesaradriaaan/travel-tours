@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  ArrowRight,
   CalendarDays,
+  CalendarX2,
   MapPin,
-  Users,
   ReceiptText,
+  Users,
 } from "lucide-react";
 
 import { getMyBookings } from "../services/api";
+import "./MyBookings.css";
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -15,42 +18,33 @@ export default function MyBookings() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
     async function loadBookings() {
       try {
         setLoading(true);
         setError("");
 
-        const data =
-          await getMyBookings({
-            signal:
-              controller.signal,
-          });
+        const data = await getMyBookings({
+          signal: controller.signal,
+        });
 
-        if (
-          controller.signal.aborted
-        ) {
+        if (controller.signal.aborted) {
           return;
         }
 
         setBookings(data.bookings || []);
-      } catch (error) {
-        if (
-          controller.signal.aborted
-        ) {
+      } catch (loadError) {
+        if (controller.signal.aborted) {
           return;
         }
 
         setError(
-          error.message ||
+          loadError.message ||
             "Unable to load your bookings."
         );
       } finally {
-        if (
-          !controller.signal.aborted
-        ) {
+        if (!controller.signal.aborted) {
           setLoading(false);
         }
       }
@@ -64,7 +58,9 @@ export default function MyBookings() {
   }, []);
 
   function formatDate(date) {
-    if (!date) return "Not set";
+    if (!date) {
+      return "Not set";
+    }
 
     return new Date(date).toLocaleDateString(
       "en-PH",
@@ -76,263 +72,129 @@ export default function MyBookings() {
     );
   }
 
-  function getStatusStyle(status) {
+  function getStatusClass(status) {
     switch (status) {
       case "Confirmed":
-        return {
-          background: "#dcfce7",
-          color: "#166534",
-        };
-
+        return "is-confirmed";
       case "Reviewing":
-        return {
-          background: "#fef3c7",
-          color: "#92400e",
-        };
-
+        return "is-reviewing";
       case "Cancelled":
-        return {
-          background: "#fee2e2",
-          color: "#991b1b",
-        };
-
+        return "is-cancelled";
+      case "Cancellation Requested":
+        return "is-cancellation-requested";
       default:
-        return {
-          background: "#e0f2fe",
-          color: "#075985",
-        };
+        return "is-received";
     }
   }
 
   if (loading) {
     return (
-      <div
-        className="container"
-        style={{ padding: "4rem 0" }}
-      >
+      <div className="route-state" role="status" aria-live="polite">
+        <span className="route-state__pulse" aria-hidden="true" />
         <p>Loading your bookings...</p>
       </div>
     );
   }
 
   return (
-    <div
-      className="container"
-      style={{
-        paddingTop: "4rem",
-        paddingBottom: "5rem",
-      }}
-    >
-      <span className="eyebrow">
-        Your Trips
-      </span>
-
-      <h1>My Bookings</h1>
-
-      <p>
-        View your AddyVenture booking
-        requests and their current status.
-      </p>
+    <div className="container bookings-list-page">
+      <header className="bookings-list-hero">
+        <span className="eyebrow">Your Trips</span>
+        <h1>My Bookings</h1>
+        <p>
+          View your AddyVenture booking requests and their current status.
+        </p>
+      </header>
 
       {error && (
-        <p
-          role="alert"
-          style={{
-            marginTop: "2rem",
-          }}
-        >
-          <strong>Error:</strong> {error}
-        </p>
-      )}
-
-      {!error && bookings.length === 0 && (
-        <div
-          style={{
-            marginTop: "2rem",
-            padding: "2rem",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--radius-md)",
-            background: "var(--white)",
-          }}
-        >
-          <h3>No bookings yet</h3>
-
-          <p>
-            Start planning your next
-            Philippine adventure.
-          </p>
-
-          <Link
-            to="/tours"
-            className="btn btn-primary"
-          >
-            Explore Tours
-          </Link>
+        <div className="page-alert page-alert--error" role="alert">
+          <strong>Unable to load bookings</strong>
+          <p>{error}</p>
         </div>
       )}
 
-      {bookings.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gap: "1.25rem",
-            marginTop: "2rem",
-          }}
-        >
-          {bookings.map((booking) => (
-            <article
-              key={booking.id}
-              style={{
-                background: "var(--white)",
-                border:
-                  "1px solid var(--line)",
-                borderRadius:
-                  "var(--radius-md)",
-                padding: "1.5rem",
-                boxShadow:
-                  "var(--shadow-sm)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    "space-between",
-                  gap: "1rem",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <small>
-                    Booking Reference
-                  </small>
+      {!error && bookings.length === 0 && (
+        <section className="bookings-empty" aria-labelledby="bookings-empty-title">
+          <span className="bookings-empty__icon" aria-hidden="true">
+            <CalendarX2 size={29} />
+          </span>
+          <h2 id="bookings-empty-title">No bookings yet</h2>
+          <p>Start planning your next Philippine adventure.</p>
+          <Link to="/tours" className="btn btn-primary">
+            Explore Tours
+          </Link>
+        </section>
+      )}
 
-                  <h3
-                    style={{
-                      marginTop: "0.25rem",
-                      marginBottom: 0,
-                    }}
-                  >
-                    {booking.bookingReference}
-                  </h3>
+      {bookings.length > 0 && (
+        <div className="bookings-list" aria-label="Your booking requests">
+          {bookings.map((booking) => (
+            <article key={booking.id} className="booking-list-card">
+              <div className="booking-list-card__header">
+                <div>
+                  <span className="booking-list-card__label">
+                    Booking reference
+                  </span>
+                  <h2>{booking.bookingReference}</h2>
                 </div>
 
                 <span
-                  style={{
-                    ...getStatusStyle(
-                      booking.status
-                    ),
-                    padding:
-                      "0.4rem 0.8rem",
-                    borderRadius: "999px",
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                  }}
+                  className={`booking-list-status ${getStatusClass(
+                    booking.status
+                  )}`}
                 >
                   {booking.status}
                 </span>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: "1rem",
-                  marginTop: "1.5rem",
-                }}
-              >
+              <div className="booking-list-card__details">
                 <div>
-                  <CalendarDays
-                    size={18}
-                  />
-
-                  <strong
-                    style={{
-                      display: "block",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    Travel Date
-                  </strong>
-
+                  <CalendarDays size={19} aria-hidden="true" />
                   <span>
-                    {formatDate(
-                      booking.travelDate
-                    )}
+                    <small>Travel date</small>
+                    <strong>{formatDate(booking.travelDate)}</strong>
                   </span>
                 </div>
 
                 <div>
-                  <Users size={18} />
-
-                  <strong
-                    style={{
-                      display: "block",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    Travelers
-                  </strong>
-
+                  <Users size={19} aria-hidden="true" />
                   <span>
-                    {booking.travelerCount}
+                    <small>Travelers</small>
+                    <strong>{booking.travelerCount}</strong>
                   </span>
                 </div>
 
                 <div>
-                  <MapPin size={18} />
-
-                  <strong
-                    style={{
-                      display: "block",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    Duration
-                  </strong>
-
+                  <MapPin size={19} aria-hidden="true" />
                   <span>
-                    {booking.tripDays} days /{" "}
-                    {booking.tripNights} nights
+                    <small>Duration</small>
+                    <strong>
+                      {booking.tripDays} days / {booking.tripNights} nights
+                    </strong>
                   </span>
                 </div>
 
                 <div>
-                  <ReceiptText
-                    size={18}
-                  />
-
-                  <strong
-                    style={{
-                      display: "block",
-                      marginTop: "0.35rem",
-                    }}
-                  >
-                    Estimated Total
-                  </strong>
-
+                  <ReceiptText size={19} aria-hidden="true" />
                   <span>
-                    ₱
-                    {Number(
-                      booking.estimatedTotal ||
-                        0
-                    ).toLocaleString()}
+                    <small>Estimated total</small>
+                    <strong>
+                      ₱
+                      {Number(
+                        booking.estimatedTotal || 0
+                      ).toLocaleString()}
+                    </strong>
                   </span>
                 </div>
               </div>
 
-              <div
-                style={{
-                  marginTop: "1.5rem",
-                }}
-              >
+              <div className="booking-list-card__footer">
                 <Link
                   to={`/my-bookings/${booking.id}`}
                   className="btn btn-secondary"
                 >
                   View Booking
+                  <ArrowRight size={17} aria-hidden="true" />
                 </Link>
               </div>
             </article>

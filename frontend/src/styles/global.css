@@ -112,6 +112,13 @@ button {
   cursor: pointer;
 }
 
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 .skip-link {
   position: fixed;
   top: 0.75rem;
@@ -225,6 +232,12 @@ select:focus-visible {
 .btn:hover::after { left: 120%; }
 .btn:active { transform: translateY(-1px) scale(0.97); }
 
+.btn:disabled {
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-primary {
   background: linear-gradient(115deg, var(--amber-gold) 0%, #ffd35b 50%, var(--coral-tide) 120%);
   background-size: 180% 180%;
@@ -265,9 +278,91 @@ select:focus-visible {
   box-shadow: var(--shadow-glow);
 }
 
+.btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.btn:disabled:hover::before {
+  transform: translateY(45%);
+}
+
+.btn:disabled:hover::after {
+  left: -45%;
+  transform: skewX(-20deg);
+}
+
 input, textarea, select {
+  font: inherit;
   transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease),
     background-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6d7f82;
+  opacity: 1;
+}
+
+.route-state {
+  min-height: 50vh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.9rem;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.route-state p {
+  margin: 0;
+  color: var(--deep-water);
+  font-weight: 700;
+}
+
+.route-state__pulse {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(18, 184, 199, 0.2);
+  border-top-color: var(--lagoon-deep);
+  border-radius: 50%;
+  animation: routeStateSpin 0.8s linear infinite;
+}
+
+@keyframes routeStateSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.page-alert {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 1.5rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(7, 59, 76, 0.14);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+
+.page-alert p {
+  margin: 0;
+  color: inherit;
+}
+
+.page-alert--error {
+  border-color: rgba(169, 40, 40, 0.22);
+  background: #fff4f2;
+  color: #8f2424;
+}
+
+@media (pointer: coarse) {
+  button,
+  .btn,
+  input,
+  select {
+    min-height: 44px;
+  }
 }
 
 input:hover, textarea:hover, select:hover {
@@ -457,4 +552,61 @@ body {
 
 main {
   background: linear-gradient(180deg, rgba(232, 240, 237, 0.72) 0%, rgba(239, 242, 235, 0.88) 100%);
+}
+
+/* Neutral image loading state for remote tour photography. */
+.image-loader {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f7f2e9 0%, #eee7da 100%) !important;
+}
+
+.image-loader::before {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -18px 0 0 -18px;
+  border: 3px solid rgba(7, 59, 76, 0.14);
+  border-top-color: var(--coral-tide);
+  border-right-color: var(--amber-gold);
+  border-radius: 50%;
+  opacity: 1;
+  pointer-events: none;
+  animation: imageLoaderSpin 720ms linear infinite;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.image-loader > img {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.image-loader > img[data-loaded="true"] {
+  opacity: 1;
+}
+
+.image-loader:has(> img[data-loaded="true"])::before {
+  opacity: 0;
+  visibility: hidden;
+  animation: none;
+}
+
+@keyframes imageLoaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-loader::before {
+    animation: none;
+  }
+
+  .image-loader > img {
+    transition: none;
+  }
 }

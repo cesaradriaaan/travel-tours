@@ -18,6 +18,10 @@ import {
   Camera,
   TicketPercent,
   Gift,
+  ClipboardList,
+  MessagesSquare,
+  MapPinned,
+  Route,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -746,7 +750,10 @@ export default function Account() {
                   className="voucher-message"
                   role="status"
                 >
-                  🎉{" "}
+                  <Gift
+                    size={18}
+                    aria-hidden="true"
+                  />
                   {
                     voucherMessage
                   }
@@ -792,9 +799,10 @@ export default function Account() {
                   !voucherLoadError &&
                   vouchers.length ===
                     0 && (
-                    <div>
+                    <div className="voucher-empty">
                       <Gift
                         size={25}
+                        aria-hidden="true"
                       />
 
                       <p>
@@ -894,32 +902,35 @@ export default function Account() {
           )}
 
 
-          <section className="account-card">
+          <section className="account-card account-quick-card">
             <h2>
               Quick Access
             </h2>
 
-            <div className="account-actions">
+            <div className="account-actions account-actions--quick">
               {!isAdmin && (
                 <>
                   <Link
                     to="/my-bookings"
-                    className="btn btn-primary"
+                    className="btn btn-primary account-quick-link"
                   >
+                    <ClipboardList size={18} aria-hidden="true" />
                     My Bookings
                   </Link>
 
                   <Link
                     to="/plan-trip"
-                    className="btn btn-secondary"
+                    className="btn btn-secondary account-quick-link"
                   >
+                    <Route size={18} aria-hidden="true" />
                     Plan a Trip
                   </Link>
 
                   <Link
                     to="/tours"
-                    className="btn btn-secondary"
+                    className="btn btn-secondary account-quick-link"
                   >
+                    <MapPinned size={18} aria-hidden="true" />
                     Explore Tours
                   </Link>
                 </>
@@ -930,15 +941,17 @@ export default function Account() {
                 <>
                   <Link
                     to="/admin/bookings"
-                    className="btn btn-primary"
+                    className="btn btn-primary account-quick-link"
                   >
+                    <ClipboardList size={18} aria-hidden="true" />
                     Manage Bookings
                   </Link>
 
                   <Link
                     to="/admin/messages"
-                    className="btn btn-secondary"
+                    className="btn btn-secondary account-quick-link"
                   >
+                    <MessagesSquare size={18} aria-hidden="true" />
                     Messages
                   </Link>
                 </>
@@ -947,13 +960,14 @@ export default function Account() {
 
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary account-quick-link"
                 onClick={
                   openLogoutModal
                 }
               >
                 <LogOut
                   size={17}
+                  aria-hidden="true"
                 />
                 Log Out
               </button>
@@ -976,61 +990,68 @@ export default function Account() {
 
 
           <section className="account-card account-privacy-card">
-            <div className="account-privacy-card__heading">
-              <ShieldCheck
-                size={24}
-                aria-hidden="true"
-              />
+            <div className="account-privacy-card__main">
+              <div className="account-privacy-card__heading">
+                <ShieldCheck
+                  size={24}
+                  aria-hidden="true"
+                />
 
-              <div>
-                <span className="eyebrow">
-                  Your Privacy
-                </span>
+                <div>
+                  <span className="eyebrow">
+                    Your Privacy
+                  </span>
 
-                <h2>
-                  Privacy &amp;
-                  Account Data
-                </h2>
+                  <h2>
+                    Privacy &amp;
+                    Account Data
+                  </h2>
+                </div>
               </div>
+
+              <p>
+                Review how your data is
+                handled or submit a
+                verified request to
+                access, correct, or
+                delete eligible account
+                information.
+              </p>
             </div>
 
-            <p>
-              Review how your data is
-              handled or submit a
-              verified request to
-              access, correct, or
-              delete eligible account
-              information.
-            </p>
+            <div className="account-privacy-card__panel">
+              <strong className="account-privacy-card__panel-label">
+                Privacy controls
+              </strong>
 
-            <div className="account-actions">
-              <Link
-                to="/privacy-policy"
-                className="btn btn-secondary"
-              >
-                Privacy Policy
-              </Link>
+              <div className="account-actions account-privacy-actions">
+                <Link
+                  to="/privacy-policy"
+                  className="btn btn-secondary"
+                >
+                  Privacy Policy
+                </Link>
 
-              <Link
-                to="/contact"
-                state={{
-                  topic:
-                    "Privacy or account data request",
-                }}
-                className="btn btn-secondary"
-              >
-                Submit Data Request
-              </Link>
+                <Link
+                  to="/contact"
+                  state={{
+                    topic:
+                      "Privacy or account data request",
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Submit Data Request
+                </Link>
+              </div>
+
+              <p className="account-privacy-note">
+                Requests are reviewed and
+                identity-verified before
+                account data is changed.
+                Some transaction records
+                may need to be retained.
+              </p>
             </div>
-
-            <p className="account-privacy-note">
-              Requests are reviewed and
-              identity-verified before
-              any account data is
-              changed or removed. Some
-              transaction records may
-              need to be retained.
-            </p>
           </section>
         </div>
       </div>

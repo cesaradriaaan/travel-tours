@@ -3,12 +3,27 @@ import { Link } from "react-router-dom";
 import { ShieldCheck, MapPinned, Route, Compass } from "lucide-react";
 import TourCard from "../components/TourCard";
 import { tours } from "../data/tours";
+import {
+  handleImageError,
+  markImageLoaded,
+} from "../lib/imageFallback";
+import {
+  getOptimizedImageSources,
+  getOptimizedImageUrl,
+} from "../lib/imageUrl";
 import "./Home.css";
 
 const featured = tours.slice(0, 3);
 const marqueePlaces = ["Palawan", "Siargao", "Bohol", "Banaue", "Vigan", "Coron"];
 const heroSlides = tours.slice(0, 5).map((tour) => ({
-  src: tour.images[0],
+  src: getOptimizedImageUrl(
+    tour.images[0],
+    { width: 1000, quality: 80 }
+  ),
+  sources: getOptimizedImageSources(
+    tour.images,
+    { width: 1000, quality: 80 }
+  ),
   label: tour.region,
   title: tour.title,
 }));
@@ -27,6 +42,24 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (heroSlides.length < 2) return undefined;
+
+    const nextIndex =
+      (activeSlide + 1) %
+      heroSlides.length;
+    const preload = new Image();
+    preload.decoding = "async";
+    preload.src = heroSlides[nextIndex].src;
+
+    return () => {
+      preload.onload = null;
+      preload.onerror = null;
+    };
+  }, [activeSlide]);
+
+  const activeHero = heroSlides[activeSlide];
+
   return (
     <>
       <section className="hero">
@@ -41,7 +74,7 @@ export default function Home() {
             <p>
               From El Nido's lagoons to Batad's rice terraces, we build
               itineraries around the islands, dives, and heritage towns
-              you actually want to see — not a fixed package.
+              you actually want to see, not a fixed package.
             </p>
             <div className="hero__actions">
               <Link to="/tours" className="btn btn-primary">
@@ -56,21 +89,25 @@ export default function Home() {
           <div className="hero__visual">
             <span className="hero__orbit hero__orbit--one" aria-hidden="true" />
             <span className="hero__orbit hero__orbit--two" aria-hidden="true" />
-            <div className="hero__image hero__slideshow">
-              {heroSlides.map((slide, index) => (
-                <img
-                  key={slide.title}
-                  className={`hero__slide ${index === activeSlide ? "hero__slide--active" : ""}`}
-                  src={slide.src}
-                  alt={index === activeSlide ? slide.title : ""}
-                  aria-hidden={index !== activeSlide}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  width="800"
-                  height="1000"
-                />
-              ))}
+            <div className="hero__image hero__slideshow image-loader">
+              <img
+                key={activeHero.title}
+                className="hero__slide hero__slide--active"
+                src={activeHero.src}
+                alt={activeHero.title}
+                loading="eager"
+                decoding="async"
+                fetchPriority={activeSlide === 0 ? "high" : "auto"}
+                width="800"
+                height="1000"
+                onLoad={markImageLoaded}
+                onError={(event) =>
+                  handleImageError(
+                    event,
+                    activeHero.sources
+                  )
+                }
+              />
             </div>
             <div className="hero__float hero__float--one" aria-hidden="true">
               <MapPinned size={18} />
@@ -133,7 +170,7 @@ export default function Home() {
             <div className="why-us__item">
               <ShieldCheck size={26} />
               <h3>Transparent pricing</h3>
-              <p>No hidden fees — the price you see is the price you pay.</p>
+              <p>No hidden fees. The price you see is the price you pay.</p>
             </div>
             <div className="why-us__item">
               <Compass size={26} />

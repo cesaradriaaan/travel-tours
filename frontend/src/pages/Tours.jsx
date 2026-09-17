@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { SearchX } from "lucide-react";
 import TourCard from "../components/TourCard";
 import FilterBar from "../components/FilterBar";
 import { tours } from "../data/tours";
@@ -60,6 +61,9 @@ export default function Tours() {
 
       {filtered.length === 0 ? (
         <div className="tours-empty">
+          <span className="tours-empty__icon" aria-hidden="true">
+            <SearchX size={27} />
+          </span>
           <p>No tours match these filters.</p>
           <button
             type="button"

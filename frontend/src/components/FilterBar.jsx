@@ -2,15 +2,15 @@ import "./FilterBar.css";
 
 const durationOptions = [
   { value: "all", label: "Any length" },
-  { value: "short", label: "1–2 days" },
-  { value: "medium", label: "3–4 days" },
+  { value: "short", label: "1-2 days" },
+  { value: "medium", label: "3-4 days" },
   { value: "long", label: "5+ days" },
 ];
 
 const priceOptions = [
   { value: "all", label: "Any price" },
   { value: "under7000", label: "Under ₱7,000" },
-  { value: "7000to10000", label: "₱7,000 – ₱10,000" },
+  { value: "7000to10000", label: "₱7,000 - ₱10,000" },
   { value: "over10000", label: "₱10,000+" },
 ];
 

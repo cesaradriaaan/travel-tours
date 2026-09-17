@@ -27,6 +27,8 @@
 }
 
 .tours-empty {
+  display: grid;
+  justify-items: center;
   text-align: center;
   padding: var(--space-6) var(--space-3);
   background: var(--white);
@@ -36,7 +38,19 @@
 }
 
 .tours-empty p {
+  margin-inline: auto;
   margin-bottom: var(--space-2);
+}
+
+.tours-empty__icon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 0.9rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mint-wash);
+  color: var(--lagoon-deep);
 }
 
 @media (max-width: 900px) {

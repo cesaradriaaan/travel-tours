@@ -6,7 +6,7 @@ import LegalPage from "../components/LegalPage";
 export default function CancellationPolicy() {
   return (
     <LegalPage
-      eyebrow="Plans Change—we Keep It Clear"
+      eyebrow="Plans Change, We Keep It Clear"
       title="Cancellation Policy"
       intro="This policy explains when and how a traveler may request cancellation and what happens while AddyVenture reviews the request."
     >

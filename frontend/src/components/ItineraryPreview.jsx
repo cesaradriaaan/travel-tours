@@ -60,7 +60,7 @@ export default function ItineraryPreview({ tripPlan, totalPrice, onClose }) {
                   <BedDouble size={14} />{" "}
                   {day.accommodation.name
                     ? `${day.accommodation.name}${
-                        day.accommodation.location ? ` — ${day.accommodation.location}` : ""
+                        day.accommodation.location ? ` - ${day.accommodation.location}` : ""
                       }`
                     : "No accommodation set"}
                 </span>

@@ -36,6 +36,12 @@ export default function Navbar() {
     loading,
   } = useAuth();
 
+  const visibleLinks = isAdmin
+    ? links.filter(
+        (link) => link.to !== "/plan-trip"
+      )
+    : links;
+
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -44,6 +50,11 @@ export default function Navbar() {
     if (!open) {
       return undefined;
     }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
 
     function closeOnEscape(event) {
       if (event.key === "Escape") {
@@ -57,6 +68,9 @@ export default function Navbar() {
     );
 
     return () => {
+      document.body.style.overflow =
+        previousOverflow;
+
       document.removeEventListener(
         "keydown",
         closeOnEscape
@@ -87,7 +101,7 @@ export default function Navbar() {
             open ? "is-open" : ""
           }`}
         >
-          {links.map((link) => (
+          {visibleLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
@@ -135,32 +149,6 @@ export default function Navbar() {
             </>
           )}
 
-          {!loading && user && isAdmin && (
-            <>
-              <NavLink
-                to="/admin/bookings"
-                className={({ isActive }) =>
-                  "navbar__link" +
-                  (isActive ? " is-active" : "")
-                }
-                onClick={() => setOpen(false)}
-              >
-                Bookings
-              </NavLink>
-
-              <NavLink
-                to="/admin/messages"
-                className={({ isActive }) =>
-                  "navbar__link" +
-                  (isActive ? " is-active" : "")
-                }
-                onClick={() => setOpen(false)}
-              >
-                Messages
-              </NavLink>
-            </>
-          )}
-
           {!loading && user && (
             <NavLink
               to="/account"
@@ -171,27 +159,23 @@ export default function Navbar() {
               onClick={() => setOpen(false)}
               title="My Account"
             >
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                }}
-              >
-                <UserRound size={17} />
+              <span className="navbar__account-label">
+                <UserRound size={17} aria-hidden="true" />
 
                 {profile?.full_name || "My Account"}
               </span>
             </NavLink>
           )}
 
-          <NavLink
-            to="/booking"
-            className="btn btn-primary navbar__cta"
-            onClick={() => setOpen(false)}
-          >
-            Book Your Trip
-          </NavLink>
+          {!isAdmin && (
+            <NavLink
+              to="/booking"
+              className="btn btn-primary navbar__cta"
+              onClick={() => setOpen(false)}
+            >
+              Book Your Trip
+            </NavLink>
+          )}
         </nav>
 
         <button
@@ -207,9 +191,9 @@ export default function Navbar() {
           }
         >
           {open ? (
-            <X size={24} />
+            <X size={24} aria-hidden="true" />
           ) : (
-            <Menu size={24} />
+            <Menu size={24} aria-hidden="true" />
           )}
         </button>
       </div>

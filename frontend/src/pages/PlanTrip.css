@@ -7,6 +7,8 @@
 }
 
 .plan-trip__empty {
+  display: grid;
+  justify-items: center;
   text-align: center;
   padding: var(--space-6) var(--space-3);
   background: var(--white);
@@ -16,7 +18,19 @@
 }
 
 .plan-trip__empty p {
+  margin-inline: auto;
   margin-bottom: var(--space-2);
+}
+
+.plan-trip__empty-icon {
+  display: grid;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 0.9rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sun-wash);
+  color: var(--deep-water);
 }
 
 .plan-trip__days {
@@ -158,12 +172,17 @@
   border-radius: var(--radius-sm);
 }
 
-.trip-item__thumb {
+.trip-item__thumb-shell {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-sm);
-  object-fit: cover;
   flex-shrink: 0;
+}
+
+.trip-item__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .trip-item__info {

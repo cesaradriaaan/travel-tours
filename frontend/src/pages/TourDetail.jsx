@@ -137,7 +137,7 @@ export default function TourDetail() {
                   to="/plan-trip"
                   className="btn btn-secondary booking-card__btn"
                 >
-                  Already in Trip — View Day {existingDay}
+                  Already in Trip - View Day {existingDay}
                 </Link>
               ) : (
                 <button

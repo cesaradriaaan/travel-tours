@@ -297,7 +297,7 @@ function formatDateRange(
 
   return `${formatDate(
     startDate
-  )} – ${formatDate(
+  )} - ${formatDate(
     endDate
   )}`;
 }
@@ -548,12 +548,12 @@ function formatVoucherLabel(
     voucher.discountType ===
     "percentage"
   ) {
-    return `${voucher.code} — ${Number(
+    return `${voucher.code} - ${Number(
       voucher.discountValue
     )}% OFF`;
   }
 
-  return `${voucher.code} — ₱${Number(
+  return `${voucher.code} - ₱${Number(
     voucher.discountValue
   ).toLocaleString()} OFF`;
 }
@@ -2011,7 +2011,7 @@ export default function Booking() {
                           .value
                       )
                     }
-                    placeholder="e.g. Addy Luy"
+                    placeholder="e.g. Mara Villanueva"
                     autoComplete="name"
                   />
 
@@ -2294,7 +2294,7 @@ export default function Booking() {
                   </span>
 
                   <small>
-                    2–12 years
+                    2-12 years
                   </small>
 
                   <input

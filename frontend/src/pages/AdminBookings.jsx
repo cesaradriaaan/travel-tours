@@ -18,6 +18,7 @@ import {
 } from "../services/api";
 
 import ConfirmModal from "../components/ConfirmModal";
+import "./Admin.css";
 
 
 const NORMAL_STATUSES = [
@@ -339,6 +340,46 @@ export default function AdminBookings() {
         null;
     };
   }, []);
+
+
+  useEffect(() => {
+    if (!selectedBooking) {
+      return undefined;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    function handleKeyDown(event) {
+      if (
+        event.key === "Escape" &&
+        !resolvingCancellation
+      ) {
+        setSelectedBooking(null);
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [
+    selectedBooking,
+    resolvingCancellation,
+  ]);
 
 
   async function loadBookings() {
@@ -675,10 +716,9 @@ export default function AdminBookings() {
 
   if (loading) {
     return (
-      <div className="container">
-        <h1>
-          Loading bookings...
-        </h1>
+      <div className="route-state" role="status" aria-live="polite">
+        <span className="route-state__pulse" aria-hidden="true" />
+        <p>Loading bookings...</p>
       </div>
     );
   }
@@ -686,16 +726,7 @@ export default function AdminBookings() {
 
   return (
     <>
-      <div
-        className="container"
-        style={{
-          paddingTop:
-            "3rem",
-
-          paddingBottom:
-            "3rem",
-        }}
-      >
+      <div className="container admin-page admin-page--bookings">
         <span className="eyebrow">
           Admin
         </span>
@@ -713,27 +744,7 @@ export default function AdminBookings() {
 
         {pendingCancellations >
           0 && (
-          <div
-            style={{
-              marginTop:
-                "1.5rem",
-
-              padding:
-                "1rem 1.2rem",
-
-              border:
-                "1px solid rgba(245, 158, 11, 0.32)",
-
-              borderRadius:
-                "14px",
-
-              background:
-                "rgba(245, 158, 11, 0.08)",
-
-              color:
-                "#7a4a00",
-            }}
-          >
+          <div className="admin-notice admin-notice--warning" role="status">
             <strong>
               {
                 pendingCancellations
@@ -750,74 +761,23 @@ export default function AdminBookings() {
 
 
         {actionMessage && (
-          <div
-            style={{
-              marginTop:
-                "1rem",
-
-              padding:
-                "0.9rem 1rem",
-
-              borderRadius:
-                "10px",
-
-              border:
-                "1px solid rgba(18, 184, 199, 0.28)",
-
-              background:
-                "rgba(18, 184, 199, 0.07)",
-
-              color:
-                "var(--deep-water)",
-
-              fontWeight:
-                600,
-            }}
-          >
+          <div className="admin-notice admin-notice--success" role="status">
             {actionMessage}
           </div>
         )}
 
 
         {error && (
-          <div
-            style={{
-              marginTop:
-                "1rem",
-
-              padding:
-                "0.9rem 1rem",
-
-              borderRadius:
-                "10px",
-
-              background:
-                "rgba(220, 38, 38, 0.07)",
-
-              color:
-                "#a11",
-            }}
-          >
+          <div className="admin-notice admin-notice--error" role="alert">
             Error: {error}
           </div>
         )}
 
 
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            flexWrap: "wrap",
-
-            marginTop:
-              "2rem",
-
-            marginBottom:
-              "1.5rem",
-          }}
-        >
+        <div className="admin-toolbar">
           <input
             type="search"
+            aria-label="Search bookings"
             placeholder="Search booking code, traveler, or email..."
             value={search}
             onChange={(event) =>
@@ -825,25 +785,11 @@ export default function AdminBookings() {
                 event.target.value
               )
             }
-            style={{
-              flex: "1",
-              minWidth:
-                "260px",
-
-              padding:
-                "0.85rem 1rem",
-
-              border:
-                "1px solid var(--line)",
-
-              borderRadius:
-                "12px",
-
-              font: "inherit",
-            }}
+            className="admin-toolbar__search"
           />
 
           <select
+            aria-label="Filter bookings by status"
             value={
               statusFilter
             }
@@ -852,21 +798,7 @@ export default function AdminBookings() {
                 event.target.value
               )
             }
-            style={{
-              padding:
-                "0.85rem 1rem",
-
-              border:
-                "1px solid var(--line)",
-
-              borderRadius:
-                "12px",
-
-              background:
-                "white",
-
-              font: "inherit",
-            }}
+            className="admin-toolbar__select"
           >
             <option value="All">
               All Statuses
@@ -903,7 +835,7 @@ export default function AdminBookings() {
         </div>
 
 
-        <p>
+        <p className="admin-results">
           Showing{" "}
           <strong>
             {
@@ -918,51 +850,35 @@ export default function AdminBookings() {
         </p>
 
 
-        <div
-          style={{
-            overflowX:
-              "auto",
-
-            marginTop:
-              "1rem",
-          }}
-        >
-          <table
-            style={{
-              width:
-                "100%",
-
-              borderCollapse:
-                "collapse",
-            }}
-          >
+        <div className="admin-table-wrap">
+          <table className="admin-table" aria-label="Booking requests">
             <thead>
               <tr>
-                <th align="left">
+                <th scope="col" align="left">
                   Booking Code
                 </th>
 
-                <th align="left">
+                <th scope="col" align="left">
                   Traveler
                 </th>
 
-                <th align="left">
+                <th scope="col" align="left">
                   Travel Date
                 </th>
 
-                <th align="left">
+                <th scope="col" align="left">
                   Travelers
                 </th>
 
-                <th align="left">
+                <th scope="col" align="left">
                   Total
                 </th>
 
-                <th align="left">
+                <th scope="col" align="left">
                   Status
                 </th>
 
-                <th align="left">
+                <th scope="col" align="left">
                   Action
                 </th>
               </tr>
@@ -983,7 +899,7 @@ export default function AdminBookings() {
                         booking.id
                       }
                     >
-                      <td>
+                      <td data-label="Booking code">
                         <strong>
                           {
                             booking.bookingReference
@@ -991,7 +907,7 @@ export default function AdminBookings() {
                         </strong>
                       </td>
 
-                      <td>
+                      <td data-label="Traveler">
                         {
                           booking.travelerName
                         }
@@ -1005,25 +921,25 @@ export default function AdminBookings() {
                         </small>
                       </td>
 
-                      <td>
+                      <td data-label="Travel date">
                         {
                           booking.travelDate
                         }
                       </td>
 
-                      <td>
+                      <td data-label="Travelers">
                         {
                           booking.travelerCount
                         }
                       </td>
 
-                      <td>
+                      <td data-label="Total">
                         {formatCurrency(
                           booking.estimatedTotal
                         )}
                       </td>
 
-                      <td>
+                      <td data-label="Status">
                         {cancellationPending ? (
                           <StatusBadge
                             status={
@@ -1053,7 +969,7 @@ export default function AdminBookings() {
                         )}
                       </td>
 
-                      <td>
+                      <td data-label="Action">
                         <button
                           type="button"
                           className="btn btn-secondary"
@@ -1082,12 +998,7 @@ export default function AdminBookings() {
 
         {filteredBookings.length ===
           0 && (
-          <p
-            style={{
-              marginTop:
-                "2rem",
-            }}
-          >
+          <p className="admin-empty-state">
             No matching bookings
             found.
           </p>
@@ -1095,12 +1006,7 @@ export default function AdminBookings() {
 
 
         {detailsLoading && (
-          <p
-            style={{
-              marginTop:
-                "2rem",
-            }}
-          >
+          <p className="admin-loading-state" role="status">
             Loading booking
             details...
           </p>
@@ -1109,65 +1015,19 @@ export default function AdminBookings() {
 
         {selectedBooking && (
           <div
-            style={{
-              position:
-                "fixed",
-
-              inset: 0,
-
-              background:
-                "rgba(3, 24, 32, 0.58)",
-
-              backdropFilter:
-                "blur(4px)",
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              padding:
-                "1rem",
-
-              zIndex:
-                9999,
+            className="admin-modal"
+            onClick={() => {
+              if (!resolvingCancellation) {
+                setSelectedBooking(null);
+              }
             }}
-            onClick={() =>
-              setSelectedBooking(
-                null
-              )
-            }
           >
             <div
-              style={{
-                position:
-                  "relative",
-
-                background:
-                  "white",
-
-                width:
-                  "min(820px, 100%)",
-
-                maxHeight:
-                  "90vh",
-
-                overflowY:
-                  "auto",
-
-                borderRadius:
-                  "22px",
-
-                padding:
-                  "2.25rem",
-
-                boxShadow:
-                  "0 25px 70px rgba(3, 24, 32, 0.28)",
-              }}
+              className="admin-modal__dialog admin-modal__dialog--wide"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="booking-detail-title"
+              aria-busy={resolvingCancellation}
               onClick={(
                 event
               ) =>
@@ -1182,48 +1042,11 @@ export default function AdminBookings() {
                     null
                   )
                 }
-                style={{
-                  position:
-                    "absolute",
-
-                  top:
-                    "1.25rem",
-
-                  right:
-                    "1.25rem",
-
-                  width:
-                    "42px",
-
-                  height:
-                    "42px",
-
-                  display:
-                    "flex",
-
-                  alignItems:
-                    "center",
-
-                  justifyContent:
-                    "center",
-
-                  border:
-                    "1px solid var(--line)",
-
-                  borderRadius:
-                    "50%",
-
-                  background:
-                    "white",
-
-                  color:
-                    "var(--deep-water)",
-
-                  cursor:
-                    "pointer",
-                }}
+                className="admin-modal__close"
+                disabled={resolvingCancellation}
+                autoFocus
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
 
 
@@ -1231,12 +1054,7 @@ export default function AdminBookings() {
                 Booking Details
               </span>
 
-              <h2
-                style={{
-                  paddingRight:
-                    "3rem",
-                }}
-              >
+              <h2 id="booking-detail-title" className="admin-modal__title">
                 {
                   selectedBooking.bookingReference
                 }

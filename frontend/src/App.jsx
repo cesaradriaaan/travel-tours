@@ -282,15 +282,11 @@ function RouteEffects() {
 function RouteLoading() {
   return (
     <div
+      className="route-state"
       role="status"
       aria-live="polite"
-      style={{
-        minHeight: "50vh",
-        display: "grid",
-        placeItems: "center",
-        padding: "3rem 1rem",
-      }}
     >
+      <span className="route-state__pulse" aria-hidden="true" />
       <p>Loading page...</p>
     </div>
   );

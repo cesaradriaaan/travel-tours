@@ -143,7 +143,7 @@ export default function Login() {
 
             <p>
               Return to your saved trips, booking updates, and exclusive travel
-              rewards—all in one place.
+              rewards, all in one place.
             </p>
 
             <div className="login-destination">

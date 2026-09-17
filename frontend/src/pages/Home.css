@@ -785,19 +785,20 @@
 }
 
 .hero__slide-dots button {
-  width: 0.48rem;
+  width: 1.35rem;
   height: 0.48rem;
   padding: 0;
   border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.58);
   cursor: pointer;
-  transition: width 180ms ease, background-color 180ms ease, transform 180ms ease;
+  transform: scaleX(0.36);
+  transition: background-color 180ms ease, transform 180ms var(--ease);
 }
 
 .hero__slide-dots button.is-active {
-  width: 1.35rem;
   background: var(--amber-gold);
+  transform: scaleX(1);
 }
 
 .hero__slide-dots button:focus-visible,

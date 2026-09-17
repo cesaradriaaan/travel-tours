@@ -52,8 +52,8 @@
   .faq-item__panel { padding-right: 0; }
 }
 
-.faq-item__button { transition: color 0.2s var(--ease), padding-left 0.2s var(--ease); }
-.faq-item__button:hover { color: var(--coral-tide); padding-left: 0.35rem; }
+.faq-item__button { transition: color 0.2s var(--ease), transform 0.2s var(--ease); }
+.faq-item__button:hover { color: var(--coral-tide); transform: translateX(0.25rem); }
 
 /* Vibrant UI pass */
 .contact-hero {

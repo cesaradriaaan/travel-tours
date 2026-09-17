@@ -154,7 +154,7 @@
   position: relative;
   z-index: 1;
   border-top: 1px solid rgba(250, 246, 239, 0.15);
-  padding: 1.45rem 0 1.85rem;
+  padding: 1.45rem 0 max(1.85rem, env(safe-area-inset-bottom));
 }
 
 .footer__bottom p {

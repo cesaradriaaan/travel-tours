@@ -16,6 +16,7 @@ import {
   updateContactMessageStatus,
   sendContactReply,
 } from "../services/api";
+import "./Admin.css";
 
 
 const STATUSES = [
@@ -310,6 +311,46 @@ export default function AdminMessages() {
         null;
     };
   }, []);
+
+
+  useEffect(() => {
+    if (!selectedMessage) {
+      return undefined;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    function handleKeyDown(event) {
+      if (
+        event.key === "Escape" &&
+        !sendingReply
+      ) {
+        setSelectedMessage(null);
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [
+    selectedMessage,
+    sendingReply,
+  ]);
 
 
   async function loadMessages() {
@@ -714,26 +755,16 @@ export default function AdminMessages() {
 
   if (loading) {
     return (
-      <div className="container">
-        <h1>
-          Loading messages...
-        </h1>
+      <div className="route-state" role="status" aria-live="polite">
+        <span className="route-state__pulse" aria-hidden="true" />
+        <p>Loading messages...</p>
       </div>
     );
   }
 
 
   return (
-    <div
-      className="container"
-      style={{
-        paddingTop:
-          "3rem",
-
-        paddingBottom:
-          "3rem",
-      }}
-    >
+    <div className="container admin-page admin-page--messages">
       <span className="eyebrow">
         Admin
       </span>
@@ -748,7 +779,7 @@ export default function AdminMessages() {
         AddyVenture contact form.
       </p>
 
-      <p>
+      <p className="admin-summary">
         <strong>
           {unreadCount}
         </strong>{" "}
@@ -760,45 +791,17 @@ export default function AdminMessages() {
 
 
       {error && (
-        <div
-          style={{
-            marginTop:
-              "1rem",
-
-            padding:
-              "0.9rem 1rem",
-
-            borderRadius:
-              "10px",
-
-            background:
-              "rgba(220, 38, 38, 0.07)",
-
-            color:
-              "#a11",
-          }}
-        >
+        <div className="admin-notice admin-notice--error" role="alert">
           Error: {error}
         </div>
       )}
 
 
       {/* SEARCH + FILTER */}
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          flexWrap: "wrap",
-
-          marginTop:
-            "2rem",
-
-          marginBottom:
-            "1.5rem",
-        }}
-      >
+      <div className="admin-toolbar">
         <input
           type="search"
+          aria-label="Search messages"
           placeholder="Search name, email, topic, or message..."
           value={search}
           onChange={(event) =>
@@ -806,30 +809,11 @@ export default function AdminMessages() {
               event.target.value
             )
           }
-          style={{
-            flex: "1",
-
-            minWidth:
-              "260px",
-
-            padding:
-              "0.85rem 1rem",
-
-            border:
-              "1px solid var(--line)",
-
-            borderRadius:
-              "12px",
-
-            background:
-              "white",
-
-            font:
-              "inherit",
-          }}
+          className="admin-toolbar__search"
         />
 
         <select
+          aria-label="Filter messages by status"
           value={
             statusFilter
           }
@@ -838,22 +822,7 @@ export default function AdminMessages() {
               event.target.value
             )
           }
-          style={{
-            padding:
-              "0.85rem 1rem",
-
-            border:
-              "1px solid var(--line)",
-
-            borderRadius:
-              "12px",
-
-            background:
-              "white",
-
-            font:
-              "inherit",
-          }}
+          className="admin-toolbar__select"
         >
           <option value="All">
             All Statuses
@@ -886,7 +855,7 @@ export default function AdminMessages() {
       </div>
 
 
-      <p>
+      <p className="admin-results">
         Showing{" "}
         <strong>
           {
@@ -902,43 +871,27 @@ export default function AdminMessages() {
 
 
       {/* MESSAGE TABLE */}
-      <div
-        style={{
-          overflowX:
-            "auto",
-
-          marginTop:
-            "1rem",
-        }}
-      >
-        <table
-          style={{
-            width:
-              "100%",
-
-            borderCollapse:
-              "collapse",
-          }}
-        >
+      <div className="admin-table-wrap">
+        <table className="admin-table" aria-label="Contact messages">
           <thead>
             <tr>
-              <th align="left">
+              <th scope="col" align="left">
                 Sender
               </th>
 
-              <th align="left">
+              <th scope="col" align="left">
                 Topic
               </th>
 
-              <th align="left">
+              <th scope="col" align="left">
                 Received
               </th>
 
-              <th align="left">
+              <th scope="col" align="left">
                 Status
               </th>
 
-              <th align="left">
+              <th scope="col" align="left">
                 Action
               </th>
             </tr>
@@ -952,7 +905,7 @@ export default function AdminMessages() {
                     message.id
                   }
                 >
-                  <td>
+                  <td data-label="Sender">
                     <strong>
                       {
                         message.name
@@ -968,19 +921,19 @@ export default function AdminMessages() {
                     </small>
                   </td>
 
-                  <td>
+                  <td data-label="Topic">
                     {
                       message.subject
                     }
                   </td>
 
-                  <td>
+                  <td data-label="Received">
                     {formatDate(
                       message.createdAt
                     )}
                   </td>
 
-                  <td>
+                  <td data-label="Status">
                     <StatusSelect
                       value={
                         message.status
@@ -1001,7 +954,7 @@ export default function AdminMessages() {
                     />
                   </td>
 
-                  <td>
+                  <td data-label="Action">
                     <button
                       type="button"
                       className="btn btn-secondary"
@@ -1027,12 +980,7 @@ export default function AdminMessages() {
 
       {filteredMessages.length ===
         0 && (
-        <p
-          style={{
-            marginTop:
-              "2rem",
-          }}
-        >
+        <p className="admin-empty-state">
           No matching messages
           found.
         </p>
@@ -1040,12 +988,7 @@ export default function AdminMessages() {
 
 
       {detailsLoading && (
-        <p
-          style={{
-            marginTop:
-              "2rem",
-          }}
-        >
+        <p className="admin-loading-state" role="status">
           Loading message...
         </p>
       )}
@@ -1054,65 +997,19 @@ export default function AdminMessages() {
       {/* MESSAGE MODAL */}
       {selectedMessage && (
         <div
-          style={{
-            position:
-              "fixed",
-
-            inset: 0,
-
-            background:
-              "rgba(3, 24, 32, 0.58)",
-
-            backdropFilter:
-              "blur(4px)",
-
-            display:
-              "flex",
-
-            alignItems:
-              "center",
-
-            justifyContent:
-              "center",
-
-            padding:
-              "1rem",
-
-            zIndex:
-              9999,
+          className="admin-modal"
+          onClick={() => {
+            if (!sendingReply) {
+              setSelectedMessage(null);
+            }
           }}
-          onClick={() =>
-            setSelectedMessage(
-              null
-            )
-          }
         >
           <div
-            style={{
-              position:
-                "relative",
-
-              background:
-                "white",
-
-              width:
-                "min(760px, 100%)",
-
-              maxHeight:
-                "90vh",
-
-              overflowY:
-                "auto",
-
-              borderRadius:
-                "22px",
-
-              padding:
-                "2.25rem",
-
-              boxShadow:
-                "0 25px 70px rgba(3, 24, 32, 0.28)",
-            }}
+            className="admin-modal__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="message-detail-title"
+            aria-busy={sendingReply}
             onClick={(event) =>
               event.stopPropagation()
             }
@@ -1125,48 +1022,11 @@ export default function AdminMessages() {
                   null
                 )
               }
-              style={{
-                position:
-                  "absolute",
-
-                top:
-                  "1.25rem",
-
-                right:
-                  "1.25rem",
-
-                width:
-                  "42px",
-
-                height:
-                  "42px",
-
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                border:
-                  "1px solid var(--line)",
-
-                borderRadius:
-                  "50%",
-
-                background:
-                  "white",
-
-                color:
-                  "var(--deep-water)",
-
-                cursor:
-                  "pointer",
-              }}
+              className="admin-modal__close"
+              disabled={sendingReply}
+              autoFocus
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
 
 
@@ -1174,30 +1034,14 @@ export default function AdminMessages() {
               Contact Message
             </span>
 
-            <h2
-              style={{
-                paddingRight:
-                  "3rem",
-              }}
-            >
+            <h2 id="message-detail-title" className="admin-modal__title">
               {
                 selectedMessage.subject
               }
             </h2>
 
 
-            <div
-              style={{
-                display:
-                  "grid",
-
-                gap:
-                  "0.55rem",
-
-                marginTop:
-                  "1rem",
-              }}
-            >
+            <div className="admin-modal__meta">
               <p
                 style={{
                   margin: 0,
@@ -1271,12 +1115,7 @@ export default function AdminMessages() {
 
 
             {/* CUSTOMER MESSAGE */}
-            <div
-              style={{
-                marginBottom:
-                  "2rem",
-              }}
-            >
+            <div className="admin-message-block">
               <span className="eyebrow">
                 Customer
               </span>
@@ -1301,12 +1140,7 @@ export default function AdminMessages() {
 
 
             {/* REPLY HISTORY */}
-            <div
-              style={{
-                marginBottom:
-                  "2rem",
-              }}
-            >
+            <div className="admin-reply-history">
               <h3>
                 Reply History
               </h3>
@@ -1320,22 +1154,7 @@ export default function AdminMessages() {
                       key={
                         reply.id
                       }
-                      style={{
-                        padding:
-                          "1rem",
-
-                        marginTop:
-                          "1rem",
-
-                        border:
-                          "1px solid var(--line)",
-
-                        borderRadius:
-                          "14px",
-
-                        background:
-                          "rgba(18, 184, 199, 0.035)",
-                      }}
+                      className="admin-reply-card"
                     >
                       <strong>
                         AddyVenture
@@ -1390,10 +1209,7 @@ export default function AdminMessages() {
               onSubmit={
                 handleSendReply
               }
-              style={{
-                marginTop:
-                  "2rem",
-              }}
+              className="admin-reply-form"
             >
               <h3>
                 Reply to Customer
@@ -1432,28 +1248,7 @@ export default function AdminMessages() {
                 disabled={
                   sendingReply
                 }
-                style={{
-                  width:
-                    "100%",
-
-                  padding:
-                    "1rem",
-
-                  marginTop:
-                    "0.75rem",
-
-                  resize:
-                    "vertical",
-
-                  border:
-                    "1px solid var(--line)",
-
-                  borderRadius:
-                    "12px",
-
-                  font:
-                    "inherit",
-                }}
+                className="admin-reply-form__textarea"
               />
 
 

@@ -1,8 +1,21 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, MapPin, Copy, GripVertical, Eye } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  MapPin,
+  MapPinned,
+  Copy,
+  GripVertical,
+  Eye,
+} from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { getTourById } from "../data/tours";
+import {
+  handleImageError,
+  markImageLoaded,
+} from "../lib/imageFallback";
+import { getOptimizedImageSources } from "../lib/imageUrl";
 import ItineraryPreview from "../components/ItineraryPreview";
 import "./PlanTrip.css";
 
@@ -62,6 +75,9 @@ export default function PlanTrip() {
 
       {totalItems === 0 ? (
         <div className="plan-trip__empty">
+          <span className="plan-trip__empty-icon" aria-hidden="true">
+            <MapPinned size={28} />
+          </span>
           <p>Your trip is empty. Browse tours to start planning.</p>
           <Link to="/tours" className="btn btn-primary">
             Browse Tours
@@ -120,18 +136,36 @@ export default function PlanTrip() {
                   <ul className="trip-day__items">
                     {day.items.map((item, index) => {
                       const tour = getTourById(item.tourId);
+                      const thumbnailImages = tour
+                        ? getOptimizedImageSources(
+                            tour.images,
+                            {
+                              width: 160,
+                              quality: 70,
+                            }
+                          )
+                        : [];
                       return (
                         <li key={`${item.tourId}-${index}`} className="trip-item">
                           {tour && (
-                            <img
-                              src={tour.images[0]}
-                              alt=""
-                              className="trip-item__thumb"
-                              loading="lazy"
-                              decoding="async"
-                              width="56"
-                              height="56"
-                            />
+                            <span className="trip-item__thumb-shell image-loader">
+                              <img
+                                src={thumbnailImages[0]}
+                                alt=""
+                                className="trip-item__thumb"
+                                loading="lazy"
+                                decoding="async"
+                                width="56"
+                                height="56"
+                                onLoad={markImageLoaded}
+                                onError={(event) =>
+                                  handleImageError(
+                                    event,
+                                    thumbnailImages
+                                  )
+                                }
+                              />
+                            </span>
                           )}
                           <div className="trip-item__info">
                             <div className="trip-item__title">{item.title}</div>

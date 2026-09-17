@@ -7,7 +7,8 @@ export default function RequireAuth({ children }) {
 
   if (loading) {
     return (
-      <div className="container" style={{ padding: "4rem 0" }}>
+      <div className="route-state" role="status" aria-live="polite">
+        <span className="route-state__pulse" aria-hidden="true" />
         <p>Checking account...</p>
       </div>
     );

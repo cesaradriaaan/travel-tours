@@ -3,6 +3,19 @@ import {
   useState,
 } from "react";
 import {
+  ArrowRight,
+  CircleCheckBig,
+  Compass,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+import {
   Link,
   Navigate,
   useLocation,
@@ -12,6 +25,9 @@ import {
 import { supabase } from "../lib/supabaseClient";
 import { getSafeInternalPath } from "../lib/safeNavigation";
 import { useAuth } from "../context/AuthContext";
+
+import "./Login.css";
+import "./Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -33,12 +49,17 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   if (loading) {
     return (
-      <div className="container" style={{ padding: "4rem 0" }}>
-        <p>Loading...</p>
-      </div>
+      <main className="login-page login-page--loading">
+        <div className="login-loader" role="status" aria-live="polite">
+          <span className="login-loader__spinner" aria-hidden="true" />
+          <p>Preparing your account...</p>
+        </div>
+      </main>
     );
   }
 
@@ -116,7 +137,7 @@ export default function Register() {
       }
 
       setSuccess(
-        "Account created! Check your email to confirm your account, then log in to continue."
+        "Check your email to confirm your account, then return here to log in."
       );
 
       setForm({
@@ -125,8 +146,11 @@ export default function Register() {
         password: "",
         confirmPassword: "",
       });
-    } catch (error) {
-      setError(error.message || "Unable to create account.");
+    } catch (registrationError) {
+      setError(
+        registrationError.message ||
+          "Unable to create account."
+      );
     } finally {
       submitLockRef.current = false;
       setSubmitting(false);
@@ -134,145 +158,238 @@ export default function Register() {
   }
 
   return (
-    <div
-      className="container"
-      style={{
-        paddingTop: "4rem",
-        paddingBottom: "5rem",
-        maxWidth: "600px",
-      }}
-    >
-      <span className="eyebrow">AddyVenture Account</span>
+    <main className="login-page register-page">
+      <div className="login-page__glow login-page__glow--one" />
+      <div className="login-page__glow login-page__glow--two" />
 
-      <h1>Create an account</h1>
-
-      <p>
-        Create your account to continue booking your AddyVenture trip.
-      </p>
-
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          marginTop: "2rem",
-          display: "grid",
-          gap: "1.25rem",
-          padding: "2rem",
-          border: "1px solid #ddd",
-          borderRadius: "16px",
-        }}
+      <section
+        className="login-shell register-shell"
+        aria-labelledby="register-title"
       >
-        <label>
-          <strong>Full name</strong>
-
-          <input
-            type="text"
-            name="fullName"
-            value={form.fullName}
-            onChange={updateField}
-            autoComplete="name"
-            required
-            disabled={submitting}
-            style={{
-              width: "100%",
-              padding: "0.85rem",
-              marginTop: "0.5rem",
-            }}
-          />
-        </label>
-
-        <label>
-          <strong>Email</strong>
-
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={updateField}
-            autoComplete="email"
-            required
-            disabled={submitting}
-            style={{
-              width: "100%",
-              padding: "0.85rem",
-              marginTop: "0.5rem",
-            }}
-          />
-        </label>
-
-        <label>
-          <strong>Password</strong>
-
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={updateField}
-            autoComplete="new-password"
-            required
-            disabled={submitting}
-            style={{
-              width: "100%",
-              padding: "0.85rem",
-              marginTop: "0.5rem",
-            }}
-          />
-        </label>
-
-        <label>
-          <strong>Confirm password</strong>
-
-          <input
-            type="password"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={updateField}
-            autoComplete="new-password"
-            required
-            disabled={submitting}
-            style={{
-              width: "100%",
-              padding: "0.85rem",
-              marginTop: "0.5rem",
-            }}
-          />
-        </label>
-
-        {error && (
-          <p role="alert">
-            <strong>Error:</strong> {error}
-          </p>
-        )}
-
-        {success && (
-          <p role="status">
-            <strong>{success}</strong>
-          </p>
-        )}
-
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={submitting}
+        <aside
+          className="login-story register-story"
+          aria-label="AddyVenture introduction"
         >
-          {submitting ? "Creating account..." : "Create Account"}
-        </button>
-
-        <p>
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            state={{
-              from,
-              message:
-                from === "/booking"
-                  ? "Sign in to continue your booking."
-                  : "",
-            }}
-          >
-            Log in
+          <Link to="/" className="login-brand" aria-label="AddyVenture home">
+            <span className="login-brand__mark" aria-hidden="true">
+              <Compass size={23} strokeWidth={2.4} />
+            </span>
+            <span>
+              <strong>AddyVenture</strong>
+              <small>Travel &amp; Tours</small>
+            </span>
           </Link>
-        </p>
-      </form>
-    </div>
+
+          <div className="login-story__content register-story__content">
+            <span className="login-story__eyebrow">
+              <Sparkles size={15} aria-hidden="true" />
+              Your journey starts here
+            </span>
+
+            <h2>Start with a place. We&apos;ll help shape the journey.</h2>
+
+            <p>
+              Keep trip plans, booking updates, vouchers, and support in one
+              secure account.
+            </p>
+
+            <div className="login-destination">
+              <MapPin size={18} aria-hidden="true" />
+              <span>
+                <small>Travel inspiration</small>
+                Bohol, Philippines
+              </span>
+            </div>
+          </div>
+
+          <p className="login-story__note">
+            Curated journeys across islands, coastlines, and heritage towns.
+          </p>
+        </aside>
+
+        <div className="login-panel register-panel">
+          <div className="login-panel__inner register-panel__inner">
+            <span className="eyebrow">Join AddyVenture</span>
+
+            <h1 id="register-title">Create your account</h1>
+
+            <p className="login-panel__intro">
+              Save your plans and keep every booking update in one place.
+            </p>
+
+            {success && (
+              <div
+                className="login-notice login-notice--success register-success"
+                role="status"
+                aria-live="polite"
+              >
+                <CircleCheckBig size={22} aria-hidden="true" />
+                <div>
+                  <strong>Account created successfully</strong>
+                  <p>{success}</p>
+                </div>
+              </div>
+            )}
+
+            <form className="login-form register-form" onSubmit={handleSubmit}>
+              <label className="login-field">
+                <span>Full name</span>
+
+                <span className="login-input-wrap">
+                  <UserRound size={19} aria-hidden="true" />
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={form.fullName}
+                    onChange={updateField}
+                    placeholder="Mara Villanueva"
+                    autoComplete="name"
+                    required
+                    disabled={submitting}
+                  />
+                </span>
+              </label>
+
+              <label className="login-field">
+                <span>Email address</span>
+
+                <span className="login-input-wrap">
+                  <Mail size={19} aria-hidden="true" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={updateField}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    required
+                    disabled={submitting}
+                  />
+                </span>
+              </label>
+
+              <label className="login-field">
+                <span>Password</span>
+
+                <span className="login-input-wrap">
+                  <LockKeyhole size={19} aria-hidden="true" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={form.password}
+                    onChange={updateField}
+                    placeholder="At least 6 characters"
+                    autoComplete="new-password"
+                    minLength={6}
+                    required
+                    disabled={submitting}
+                  />
+
+                  <button
+                    type="button"
+                    className="login-password-toggle"
+                    onClick={() =>
+                      setShowPassword((current) => !current)
+                    }
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                    disabled={submitting}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={19} aria-hidden="true" />
+                    ) : (
+                      <Eye size={19} aria-hidden="true" />
+                    )}
+                  </button>
+                </span>
+              </label>
+
+              <label className="login-field">
+                <span>Confirm password</span>
+
+                <span className="login-input-wrap">
+                  <LockKeyhole size={19} aria-hidden="true" />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={updateField}
+                    placeholder="Enter it again"
+                    autoComplete="new-password"
+                    minLength={6}
+                    required
+                    disabled={submitting}
+                  />
+
+                  <button
+                    type="button"
+                    className="login-password-toggle"
+                    onClick={() =>
+                      setShowConfirmPassword((current) => !current)
+                    }
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide confirmation password"
+                        : "Show confirmation password"
+                    }
+                    aria-pressed={showConfirmPassword}
+                    disabled={submitting}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={19} aria-hidden="true" />
+                    ) : (
+                      <Eye size={19} aria-hidden="true" />
+                    )}
+                  </button>
+                </span>
+              </label>
+
+              {error && (
+                <div className="login-notice login-notice--error" role="alert">
+                  <span aria-hidden="true">!</span>
+                  <p>{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary login-submit"
+                disabled={submitting}
+              >
+                <span>
+                  {submitting ? "Creating account..." : "Create Account"}
+                </span>
+                {!submitting && <ArrowRight size={19} aria-hidden="true" />}
+              </button>
+            </form>
+
+            <p className="login-register">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                state={{
+                  from,
+                  message:
+                    from === "/booking"
+                      ? "Sign in to continue your booking."
+                      : "",
+                }}
+              >
+                Log in
+              </Link>
+            </p>
+
+            <div className="login-security register-security">
+              <ShieldCheck size={16} aria-hidden="true" />
+              <span>
+                By continuing, you agree to our{" "}
+                <Link to="/terms">Terms</Link> and{" "}
+                <Link to="/privacy-policy">Privacy Policy</Link>.
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

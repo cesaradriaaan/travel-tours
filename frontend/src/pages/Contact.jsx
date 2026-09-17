@@ -195,8 +195,8 @@ export default function Contact() {
           <h1>Questions before your next adventure?</h1>
 
           <p>
-            Tell us what you need help with — trip planning, your booking
-            request, or how the itinerary builder works.
+            Tell us what you need help with: trip planning, a booking request,
+            or the itinerary builder.
           </p>
         </div>
       </section>

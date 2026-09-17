@@ -132,6 +132,10 @@
   margin-bottom: 0.2rem;
 }
 
+.account-info-item span {
+  overflow-wrap: anywhere;
+}
+
 .account-actions {
   display: flex;
   flex-wrap: wrap;
@@ -158,14 +162,37 @@
 }
 
 .voucher-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 1rem;
   font-weight: 600;
+  color: #12633f;
 }
 
 .voucher-list {
   display: grid;
   gap: 1rem;
   margin-top: 1.5rem;
+}
+
+.voucher-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1.6rem;
+  border: 1px dashed rgba(7, 59, 76, 0.18);
+  border-radius: var(--radius-sm);
+  background: #f7faf8;
+  text-align: center;
+}
+
+.voucher-empty svg {
+  color: var(--lagoon-deep);
+}
+
+.voucher-empty p {
+  margin: 0;
 }
 
 .voucher-card {
@@ -277,6 +304,10 @@
 }
 
 .account-privacy-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(19rem, 0.85fr);
+  align-items: stretch;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
   border-color:
     rgba(18, 184, 199, 0.24);
   background:
@@ -285,6 +316,16 @@
       rgba(239, 252, 249, 0.78),
       var(--white)
     );
+}
+
+.account-privacy-card__main {
+  align-self: center;
+  padding-block: 0.35rem;
+}
+
+.account-privacy-card__main > p {
+  max-width: 48ch;
+  margin: 0;
 }
 
 .account-privacy-card__heading {
@@ -301,12 +342,65 @@
 
 .account-privacy-card__heading h2 {
   margin-top: 0.2rem;
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+}
+
+.account-privacy-card__panel {
+  display: grid;
+  align-content: center;
+  padding: 1.25rem;
+  border: 1px solid rgba(7, 59, 76, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 24px rgba(7, 59, 76, 0.07);
+}
+
+.account-privacy-card__panel-label {
+  color: var(--deep-water);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.account-privacy-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+}
+
+.account-privacy-actions .btn {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0.72rem 1rem;
+  font-size: 0.86rem;
 }
 
 .account-privacy-note {
-  margin-top: 1rem;
-  font-size: 0.86rem;
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(7, 59, 76, 0.1);
+  font-size: 0.78rem;
+  line-height: 1.55;
   color: var(--ink-soft);
+}
+
+.account-quick-card h2 {
+  margin-bottom: 1rem;
+}
+
+.account-actions--quick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.account-quick-link {
+  width: 100%;
+  min-height: 3rem;
+  padding-inline: 1rem;
+  white-space: nowrap;
 }
 
 
@@ -336,5 +430,26 @@
 
   .voucher-discount {
     text-align: left;
+  }
+
+  .account-actions--quick {
+    grid-template-columns: 1fr;
+  }
+
+  .account-privacy-card {
+    gap: 1.25rem;
+    padding: 1.4rem;
+  }
+}
+
+@media (min-width: 651px) and (max-width: 860px) {
+  .account-actions--quick {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .account-privacy-card {
+    grid-template-columns: 1fr;
   }
 }
