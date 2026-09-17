@@ -12,10 +12,18 @@ export default function Gallery({ images, alt }) {
   return (
     <div className="gallery">
       <div className="gallery__main">
-        <img src={images[index]} alt={`${alt} — photo ${index + 1}`} decoding="async" />
+        <img
+          src={images[index]}
+          alt={`${alt} — photo ${index + 1}`}
+          decoding="async"
+          fetchPriority="high"
+          width="1600"
+          height="800"
+        />
         {hasMultiple && (
           <>
             <button
+              type="button"
               className="gallery__arrow gallery__arrow--left"
               onClick={prev}
               aria-label="Previous photo"
@@ -23,6 +31,7 @@ export default function Gallery({ images, alt }) {
               <ChevronLeft size={22} />
             </button>
             <button
+              type="button"
               className="gallery__arrow gallery__arrow--right"
               onClick={next}
               aria-label="Next photo"
@@ -37,12 +46,20 @@ export default function Gallery({ images, alt }) {
         <div className="gallery__thumbs">
           {images.map((img, i) => (
             <button
+              type="button"
               key={i}
               className={`gallery__thumb ${i === index ? "is-active" : ""}`}
               onClick={() => setIndex(i)}
               aria-label={`View photo ${i + 1}`}
             >
-              <img src={img} alt="" loading="lazy" decoding="async" />
+              <img
+                src={img}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                width="84"
+                height="63"
+              />
             </button>
           ))}
         </div>

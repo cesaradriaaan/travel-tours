@@ -92,6 +92,7 @@ export default function PlanTrip() {
                   <span className="trip-day__badge">Day {day.dayNumber}</span>
                   <div className="trip-day__header-actions">
                     <button
+                      type="button"
                       className="trip-day__icon-btn"
                       onClick={() => duplicateDay(day.dayNumber)}
                       aria-label={`Duplicate Day ${day.dayNumber}`}
@@ -101,6 +102,7 @@ export default function PlanTrip() {
                     </button>
                     {tripPlan.days.length > 1 && (
                       <button
+                        type="button"
                         className="trip-day__icon-btn"
                         onClick={() => handleRemoveDay(day)}
                         aria-label={`Remove Day ${day.dayNumber}`}
@@ -127,6 +129,8 @@ export default function PlanTrip() {
                               className="trip-item__thumb"
                               loading="lazy"
                               decoding="async"
+                              width="56"
+                              height="56"
                             />
                           )}
                           <div className="trip-item__info">
@@ -155,6 +159,7 @@ export default function PlanTrip() {
                               ))}
                             </select>
                             <button
+                              type="button"
                               className="trip-item__remove"
                               onClick={() => removeItem(day.dayNumber, index)}
                               aria-label={`Remove ${item.title}`}
@@ -227,10 +232,18 @@ export default function PlanTrip() {
           </div>
 
           <div className="plan-trip__toolbar">
-            <button className="btn btn-secondary" onClick={addDay}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={addDay}
+            >
               <Plus size={16} /> Add another day
             </button>
-            <button className="btn btn-secondary" onClick={() => setShowPreview(true)}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowPreview(true)}
+            >
               <Eye size={16} /> Preview Itinerary
             </button>
           </div>

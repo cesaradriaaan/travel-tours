@@ -1,4 +1,8 @@
-import { useEffect } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+} from "react";
 import {
   Routes,
   Route,
@@ -10,25 +14,52 @@ import Footer from "./components/Footer";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
 
-import Home from "./pages/Home";
-import Tours from "./pages/Tours";
-import TourDetail from "./pages/TourDetail";
-import PlanTrip from "./pages/PlanTrip";
-import Booking from "./pages/Booking";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Terms from "./pages/Terms";
-import CancellationPolicy from "./pages/CancellationPolicy";
+const Home = lazy(() => import("./pages/Home"));
+const Tours = lazy(() => import("./pages/Tours"));
+const TourDetail = lazy(() =>
+  import("./pages/TourDetail")
+);
+const PlanTrip = lazy(() =>
+  import("./pages/PlanTrip")
+);
+const Booking = lazy(() =>
+  import("./pages/Booking")
+);
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() =>
+  import("./pages/Contact")
+);
+const PrivacyPolicy = lazy(() =>
+  import("./pages/PrivacyPolicy")
+);
+const Terms = lazy(() => import("./pages/Terms"));
+const CancellationPolicy = lazy(() =>
+  import("./pages/CancellationPolicy")
+);
 
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Account from "./pages/Account";
-import MyBookings from "./pages/MyBookings";
-import MyBookingDetail from "./pages/MyBookingDetail";
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() =>
+  import("./pages/Register")
+);
+const Account = lazy(() =>
+  import("./pages/Account")
+);
+const MyBookings = lazy(() =>
+  import("./pages/MyBookings")
+);
+const MyBookingDetail = lazy(() =>
+  import("./pages/MyBookingDetail")
+);
 
-import AdminBookings from "./pages/AdminBookings";
-import AdminMessages from "./pages/AdminMessages";
+const AdminBookings = lazy(() =>
+  import("./pages/AdminBookings")
+);
+const AdminMessages = lazy(() =>
+  import("./pages/AdminMessages")
+);
+const NotFound = lazy(() =>
+  import("./pages/NotFound")
+);
 
 const pageTitles = {
   "/": "AddyVenture Travel & Tours",
@@ -56,24 +87,213 @@ const pageTitles = {
     "Admin Messages | AddyVenture",
 };
 
+const defaultDescription =
+  "Plan curated Philippine trips across islands, coastlines, and heritage towns with AddyVenture Travel & Tours.";
+
+const pageDescriptions = {
+  "/": defaultDescription,
+  "/tours":
+    "Browse curated Philippine tours featuring islands, nature, culture, diving, surfing, and heritage destinations.",
+  "/plan-trip":
+    "Build a flexible day-by-day Philippine itinerary around the destinations and experiences you want.",
+  "/about":
+    "Learn how AddyVenture creates clear, flexible, and locally focused Philippine travel experiences.",
+  "/contact":
+    "Contact AddyVenture for booking questions, trip planning support, cancellations, or privacy requests.",
+  "/privacy-policy":
+    "Read how AddyVenture collects, uses, protects, and manages personal information.",
+  "/terms":
+    "Review the terms and conditions for using AddyVenture and submitting trip requests.",
+  "/cancellation-policy":
+    "Review AddyVenture's trip cancellation request process and important conditions.",
+};
+
+function setMetaContent(
+  attribute,
+  name,
+  content
+) {
+  let element = document.querySelector(
+    `meta[${attribute}="${name}"]`
+  );
+
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute(attribute, name);
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute("content", content);
+}
+
+function setHeadLink(rel, href) {
+  let element = document.querySelector(
+    `link[rel="${rel}"]`
+  );
+
+  if (!element) {
+    element = document.createElement("link");
+    element.setAttribute("rel", rel);
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute("href", href);
+}
+
+function getRouteMetadata(pathname) {
+  if (pathname.startsWith("/tours/")) {
+    return {
+      title: "Tour Details | AddyVenture",
+      description:
+        "Explore tour highlights, itinerary details, inclusions, and pricing with AddyVenture.",
+      privatePage: false,
+    };
+  }
+
+  if (pathname.startsWith("/my-bookings/")) {
+    return {
+      title: "Booking Details | AddyVenture",
+      description:
+        "Review the details and status of your AddyVenture booking request.",
+      privatePage: true,
+    };
+  }
+
+  const privatePage =
+    pathname === "/booking" ||
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/account" ||
+    pathname === "/my-bookings" ||
+    pathname.startsWith("/admin/");
+
+  if (pageTitles[pathname]) {
+    return {
+      title: pageTitles[pathname],
+      description:
+        pageDescriptions[pathname] ||
+        defaultDescription,
+      privatePage,
+    };
+  }
+
+  return {
+    title: "Page Not Found | AddyVenture",
+    description:
+      "The requested AddyVenture page could not be found.",
+    privatePage: true,
+  };
+}
+
 function RouteEffects() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    document.title =
-      pathname.startsWith("/tours/")
-        ? "Tour Details | AddyVenture"
-        : pathname.startsWith(
-            "/my-bookings/"
-          )
-        ? "Booking Details | AddyVenture"
-        : pageTitles[pathname] ||
-          "AddyVenture Travel & Tours";
+    const metadata =
+      getRouteMetadata(pathname);
+
+    document.title = metadata.title;
+
+    setMetaContent(
+      "name",
+      "description",
+      metadata.description
+    );
+    setMetaContent(
+      "name",
+      "robots",
+      metadata.privatePage
+        ? "noindex, nofollow"
+          : "index, follow"
+    );
+    setMetaContent(
+      "name",
+      "theme-color",
+      "#073b4c"
+    );
+    setMetaContent(
+      "property",
+      "og:type",
+      "website"
+    );
+    setMetaContent(
+      "property",
+      "og:site_name",
+      "AddyVenture Travel & Tours"
+    );
+    setMetaContent(
+      "property",
+      "og:title",
+      metadata.title
+    );
+    setMetaContent(
+      "property",
+      "og:description",
+      metadata.description
+    );
+    setMetaContent(
+      "property",
+      "og:image",
+      new URL(
+        "/social-preview.png",
+        window.location.origin
+      ).href
+    );
+    setMetaContent(
+      "name",
+      "twitter:card",
+      "summary_large_image"
+    );
+    setMetaContent(
+      "name",
+      "twitter:title",
+      metadata.title
+    );
+    setMetaContent(
+      "name",
+      "twitter:description",
+      metadata.description
+    );
+    setMetaContent(
+      "name",
+      "twitter:image",
+      new URL(
+        "/social-preview.png",
+        window.location.origin
+      ).href
+    );
+
+    setHeadLink("icon", "/favicon.svg");
+    setHeadLink(
+      "apple-touch-icon",
+      "/apple-touch-icon.png"
+    );
+    setHeadLink(
+      "manifest",
+      "/site.webmanifest"
+    );
 
     window.scrollTo(0, 0);
   }, [pathname]);
 
   return null;
+}
+
+function RouteLoading() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: "50vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "3rem 1rem",
+      }}
+    >
+      <p>Loading page...</p>
+    </div>
+  );
 }
 
 export default function App() {
@@ -91,7 +311,8 @@ export default function App() {
       <Navbar />
 
       <main id="main-content">
-        <Routes>
+        <Suspense fallback={<RouteLoading />}>
+          <Routes>
           <Route
             path="/"
             element={<Home />}
@@ -200,7 +421,13 @@ export default function App() {
               </RequireAdmin>
             }
           />
-        </Routes>
+
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
+          </Routes>
+        </Suspense>
       </main>
 
       <Footer />

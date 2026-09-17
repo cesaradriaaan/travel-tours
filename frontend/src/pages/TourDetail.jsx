@@ -141,6 +141,7 @@ export default function TourDetail() {
                 </Link>
               ) : (
                 <button
+                  type="button"
                   className="btn btn-primary booking-card__btn"
                   onClick={() =>
                     addTourToTrip(tour.id)

@@ -66,7 +66,9 @@ export default function Home() {
                   aria-hidden={index !== activeSlide}
                   loading={index === 0 ? "eager" : "lazy"}
                   decoding="async"
-                  fetchpriority={index === 0 ? "high" : "auto"}
+                  fetchPriority={index === 0 ? "high" : "auto"}
+                  width="800"
+                  height="1000"
                 />
               ))}
             </div>

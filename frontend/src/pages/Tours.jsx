@@ -61,7 +61,11 @@ export default function Tours() {
       {filtered.length === 0 ? (
         <div className="tours-empty">
           <p>No tours match these filters.</p>
-          <button className="btn btn-secondary" onClick={() => setFilters(emptyFilters)}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setFilters(emptyFilters)}
+          >
             Clear filters
           </button>
         </div>

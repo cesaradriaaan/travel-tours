@@ -16,7 +16,12 @@ export default function ItineraryPreview({ tripPlan, totalPrice, onClose }) {
       <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
         <div className="preview-modal__header">
           <h2>Itinerary Preview</h2>
-          <button className="preview-modal__close" onClick={onClose} aria-label="Close preview">
+          <button
+            type="button"
+            className="preview-modal__close"
+            onClick={onClose}
+            aria-label="Close preview"
+          >
             <X size={22} />
           </button>
         </div>

@@ -22,3 +22,11 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local AI agent skills and tooling
+.agent/
+.agents/
+.claude/
+.codex/
+.gemini/
+skills-lock.json

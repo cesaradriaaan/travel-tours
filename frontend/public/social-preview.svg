@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">AddyVenture Travel &amp; Tours</title>
+  <desc id="description">Curated Philippine island, coastline, and heritage journeys.</desc>
+
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#073b4c"/>
+      <stop offset="0.58" stop-color="#0a6070"/>
+      <stop offset="1" stop-color="#0794a5"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffbd2e"/>
+      <stop offset="1" stop-color="#ff6f61"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <circle cx="1080" cy="90" r="240" fill="#57d5bd" opacity="0.16"/>
+  <circle cx="1045" cy="120" r="145" fill="none" stroke="#dcf8f1" stroke-width="2" opacity="0.24"/>
+  <path d="M0 500c155-86 260-67 382 19 116 82 237 94 363 22 145-82 279-64 455 22v67H0Z" fill="#57d5bd" opacity="0.28"/>
+  <path d="M0 555c181-68 315-41 437 25 131 71 257 67 390 8 130-58 244-54 373-8v50H0Z" fill="#ffbd2e" opacity="0.16"/>
+
+  <g transform="translate(92 82)">
+    <rect width="106" height="106" rx="31" fill="#fffaf1"/>
+    <circle cx="53" cy="53" r="34" fill="none" stroke="#ff6f61" stroke-width="6"/>
+    <path d="m70 36-11 23-23 11 11-23 23-11Z" fill="url(#sun)" stroke="#073b4c" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="53" cy="53" r="4.8" fill="#073b4c"/>
+  </g>
+
+  <text x="92" y="260" fill="#fffaf1" font-family="Georgia, serif" font-size="70" font-weight="700">AddyVenture</text>
+  <text x="96" y="318" fill="#dcf8f1" font-family="Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="7">TRAVEL &amp; TOURS</text>
+  <rect x="94" y="357" width="90" height="7" rx="3.5" fill="url(#sun)"/>
+  <text x="94" y="425" fill="#ffffff" font-family="Arial, sans-serif" font-size="34">From Dream Destinations to Real AddyVentures.</text>
+  <text x="94" y="476" fill="#dcf8f1" font-family="Arial, sans-serif" font-size="24">Curated journeys across the Philippines.</text>
+</svg>

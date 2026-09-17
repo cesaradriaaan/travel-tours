@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  NavLink,
+  useLocation,
+} from "react-router-dom";
 import {
   Menu,
   X,
@@ -22,6 +25,7 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
 
   const { totalItems } = useTrip();
 
@@ -32,6 +36,34 @@ export default function Navbar() {
     loading,
   } = useAuth();
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      closeOnEscape
+    );
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        closeOnEscape
+      );
+    };
+  }, [open]);
+
   return (
     <header className="navbar">
       <div className="container navbar__inner">
@@ -40,11 +72,16 @@ export default function Navbar() {
           className="navbar__logo"
           onClick={() => setOpen(false)}
         >
-          <Compass size={22} strokeWidth={2} />
+          <Compass
+            size={22}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
           <span>AddyVenture Travel & Tours</span>
         </NavLink>
 
         <nav
+          id="primary-navigation"
           aria-label="Primary navigation"
           className={`navbar__links ${
             open ? "is-open" : ""
@@ -158,11 +195,13 @@ export default function Navbar() {
         </nav>
 
         <button
+          type="button"
           className="navbar__toggle"
           aria-label={
             open ? "Close menu" : "Open menu"
           }
           aria-expanded={open}
+          aria-controls="primary-navigation"
           onClick={() =>
             setOpen((current) => !current)
           }

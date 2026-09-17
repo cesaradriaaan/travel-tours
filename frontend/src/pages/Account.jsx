@@ -542,6 +542,9 @@ export default function Account() {
                     }
                     alt="Profile"
                     className="account-avatar__image"
+                    decoding="async"
+                    width="110"
+                    height="110"
                   />
                 ) : (
                   <div className="account-avatar__placeholder">

@@ -1,0 +1,23 @@
+{
+  "name": "AddyVenture Travel & Tours",
+  "short_name": "AddyVenture",
+  "description": "Curated Philippine travel and tour planning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf1",
+  "theme_color": "#073b4c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

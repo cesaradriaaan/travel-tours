@@ -6,7 +6,14 @@ export default function TourCard({ tour }) {
   return (
     <Link to={`/tours/${tour.id}`} className="tour-card">
       <div className="tour-card__image-wrap">
-        <img src={tour.images[0]} alt={tour.title} loading="lazy" decoding="async" />
+        <img
+          src={tour.images[0]}
+          alt={tour.title}
+          loading="lazy"
+          decoding="async"
+          width="800"
+          height="600"
+        />
       </div>
       <div className="tour-card__body">
         <div className="tour-card__meta">

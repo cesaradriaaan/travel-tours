@@ -62,7 +62,11 @@ export default function FilterBar({ regions, tags, filters, onChange, onClear })
           ))}
         </select>
 
-        <button className="btn btn-secondary filter-bar__clear" onClick={onClear}>
+        <button
+          type="button"
+          className="btn btn-secondary filter-bar__clear"
+          onClick={onClear}
+        >
           Clear filters
         </button>
       </div>
@@ -70,6 +74,7 @@ export default function FilterBar({ regions, tags, filters, onChange, onClear })
       <div className="filter-bar__tags">
         {tags.map((tag) => (
           <button
+            type="button"
             key={tag}
             className={`filter-bar__tag ${filters.tags.includes(tag) ? "is-active" : ""}`}
             onClick={() => toggleTag(tag)}

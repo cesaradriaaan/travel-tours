@@ -295,12 +295,19 @@
       var(--paper);
 
     transform: translateX(100%);
+    visibility: hidden;
+    pointer-events: none;
 
-    transition: transform 0.25s var(--ease);
+    transition:
+      transform 0.25s var(--ease),
+      visibility 0s linear 0.25s;
   }
 
   .navbar__links.is-open {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
   }
 
   .navbar__link {
