@@ -18,6 +18,96 @@ const isProduction =
   process.env.NODE_ENV ===
   "production";
 
+const rawTrustProxyHops =
+  String(
+    process.env.TRUST_PROXY_HOPS ||
+      "0"
+  ).trim();
+
+const trustProxyHops =
+  Number(rawTrustProxyHops);
+
+if (
+  !Number.isInteger(
+    trustProxyHops
+  ) ||
+  trustProxyHops < 0 ||
+  trustProxyHops > 5
+) {
+  throw new Error(
+    "TRUST_PROXY_HOPS must be an integer from 0 through 5."
+  );
+}
+
+
+function readPositiveIntegerEnv(
+  name,
+  fallback,
+  maximum = 100000
+) {
+  const rawValue =
+    String(
+      process.env[name] ??
+        fallback
+    ).trim();
+
+  const parsedValue =
+    Number(rawValue);
+
+  if (
+    !Number.isInteger(
+      parsedValue
+    ) ||
+    parsedValue < 1 ||
+    parsedValue > maximum
+  ) {
+    throw new Error(
+      `${name} must be an integer from 1 through ${maximum}.`
+    );
+  }
+
+  return parsedValue;
+}
+
+
+const dailyUsageLimits =
+  Object.freeze({
+    contactSubmissionsPerIp:
+      readPositiveIntegerEnv(
+        "MAX_DAILY_CONTACT_SUBMISSIONS_PER_IP",
+        20,
+        500
+      ),
+
+    bookingRequestsPerAccount:
+      readPositiveIntegerEnv(
+        "MAX_DAILY_BOOKING_REQUESTS_PER_ACCOUNT",
+        10,
+        500
+      ),
+
+    cancellationRequestsPerAccount:
+      readPositiveIntegerEnv(
+        "MAX_DAILY_CANCELLATION_REQUESTS_PER_ACCOUNT",
+        10,
+        500
+      ),
+
+    voucherAttemptsPerAccount:
+      readPositiveIntegerEnv(
+        "MAX_DAILY_VOUCHER_ATTEMPTS_PER_ACCOUNT",
+        30,
+        1000
+      ),
+
+    emailRepliesGlobal:
+      readPositiveIntegerEnv(
+        "MAX_DAILY_EMAIL_REPLIES",
+        50,
+        1000
+      ),
+  });
+
 const requiredEnvironmentVariables = [
   "SUPABASE_URL",
   "SUPABASE_SECRET_KEY",
@@ -54,9 +144,24 @@ const supabase = require("./supabase");
 
 const app = express();
 
-const resend = new Resend(
-  process.env.RESEND_API_KEY
-);
+if (trustProxyHops > 0) {
+  // Set this only to the exact number of trusted reverse
+  // proxies in front of the API. Never use a blanket true.
+  app.set(
+    "trust proxy",
+    trustProxyHops
+  );
+}
+
+const resendApiKey =
+  String(
+    process.env.RESEND_API_KEY ||
+      ""
+  ).trim();
+
+const resend = resendApiKey
+  ? new Resend(resendApiKey)
+  : null;
 
 
 // Keep production logs useful without printing request bodies,
@@ -112,6 +217,7 @@ function logServerError(
 // =====================================================
 
 app.disable("x-powered-by");
+app.disable("etag");
 
 const localDevelopmentOrigins = [
   "http://localhost:5173",
@@ -128,13 +234,75 @@ function normalizeOrigin(value) {
 }
 
 
+function validateConfiguredOrigin(
+  value
+) {
+  const normalized =
+    normalizeOrigin(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized === "*") {
+    throw new Error(
+      "ALLOWED_ORIGINS must list exact origins. Wildcards are not allowed."
+    );
+  }
+
+  let parsedOrigin;
+
+  try {
+    parsedOrigin =
+      new URL(normalized);
+  } catch {
+    throw new Error(
+      `Invalid ALLOWED_ORIGINS entry: ${normalized}`
+    );
+  }
+
+  const protocolAllowed =
+    parsedOrigin.protocol ===
+      "https:" ||
+    (!isProduction &&
+      parsedOrigin.protocol ===
+        "http:");
+
+  if (!protocolAllowed) {
+    throw new Error(
+      `ALLOWED_ORIGINS entry must use ${
+        isProduction
+          ? "HTTPS"
+          : "HTTP or HTTPS"
+      }: ${normalized}`
+    );
+  }
+
+  if (
+    parsedOrigin.username ||
+    parsedOrigin.password ||
+    parsedOrigin.pathname !== "/" ||
+    parsedOrigin.search ||
+    parsedOrigin.hash
+  ) {
+    throw new Error(
+      `ALLOWED_ORIGINS entries cannot contain credentials, paths, queries, or fragments: ${normalized}`
+    );
+  }
+
+  return parsedOrigin.origin;
+}
+
+
 const configuredOrigins =
   String(
     process.env.ALLOWED_ORIGINS ||
       ""
   )
     .split(",")
-    .map(normalizeOrigin)
+    .map(
+      validateConfiguredOrigin
+    )
     .filter(Boolean);
 
 const allowedOrigins = new Set([
@@ -196,6 +364,11 @@ app.use((req, res, next) => {
   res.setHeader(
     "X-Permitted-Cross-Domain-Policies",
     "none"
+  );
+
+  res.setHeader(
+    "X-Robots-Tag",
+    "noindex, nofollow, noarchive"
   );
 
   res.setHeader(
@@ -283,6 +456,40 @@ function rateLimitResponse(
   return {
     success: false,
     message,
+  };
+}
+
+
+function logUsageGuardrail(
+  event
+) {
+  const safeEvent =
+    String(
+      event ||
+        "Usage guardrail reached"
+    )
+      .replace(/[^A-Za-z0-9 _.-]/g, "")
+      .slice(0, 120);
+
+  console.warn(
+    JSON.stringify({
+      level: "warn",
+      event: safeEvent,
+    })
+  );
+}
+
+
+function usageLimitHandler(
+  event,
+  message
+) {
+  return (req, res) => {
+    logUsageGuardrail(event);
+
+    return res.status(429).json(
+      rateLimitResponse(message)
+    );
   };
 }
 
@@ -554,6 +761,162 @@ const adminEmailLimiter =
           )
         );
       },
+  });
+
+
+// -----------------------------------------------------
+// DAILY COST / USAGE GUARDRAILS
+//
+// These caps complement the shorter abuse limits above.
+// The default in-memory store is intentionally a first
+// line of defense. Provider quotas / spend controls remain
+// the authoritative cap across restarts and multiple API
+// instances.
+// -----------------------------------------------------
+
+const dailyWindowMs =
+  24 * 60 * 60 * 1000;
+
+const dailyContactSubmissionLimiter =
+  rateLimit({
+    windowMs:
+      dailyWindowMs,
+
+    limit:
+      dailyUsageLimits
+        .contactSubmissionsPerIp,
+
+    skipFailedRequests:
+      true,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      usageLimitHandler(
+        "Daily contact submission cap reached",
+        "Daily contact form limit reached. Please try again tomorrow."
+      ),
+  });
+
+
+const dailyBookingRequestLimiter =
+  rateLimit({
+    windowMs:
+      dailyWindowMs,
+
+    limit:
+      dailyUsageLimits
+        .bookingRequestsPerAccount,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    skipFailedRequests:
+      true,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      usageLimitHandler(
+        "Daily booking request cap reached",
+        "Daily booking request limit reached. Please try again tomorrow."
+      ),
+  });
+
+
+const dailyCancellationRequestLimiter =
+  rateLimit({
+    windowMs:
+      dailyWindowMs,
+
+    limit:
+      dailyUsageLimits
+        .cancellationRequestsPerAccount,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    skipFailedRequests:
+      true,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      usageLimitHandler(
+        "Daily cancellation request cap reached",
+        "Daily cancellation request limit reached. Please try again tomorrow."
+      ),
+  });
+
+
+const dailyVoucherAttemptLimiter =
+  rateLimit({
+    windowMs:
+      dailyWindowMs,
+
+    limit:
+      dailyUsageLimits
+        .voucherAttemptsPerAccount,
+
+    keyGenerator:
+      (req) =>
+        req.user.id,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      usageLimitHandler(
+        "Daily voucher attempt cap reached",
+        "Daily voucher attempt limit reached. Please try again tomorrow."
+      ),
+  });
+
+
+const dailyEmailReplyLimiter =
+  rateLimit({
+    windowMs:
+      dailyWindowMs,
+
+    limit:
+      dailyUsageLimits
+        .emailRepliesGlobal,
+
+    keyGenerator:
+      () =>
+        "global-email-budget",
+
+    skipFailedRequests:
+      true,
+
+    standardHeaders:
+      "draft-7",
+
+    legacyHeaders:
+      false,
+
+    handler:
+      usageLimitHandler(
+        "Daily email reply budget reached",
+        "Daily email sending budget reached. Please continue tomorrow or review the configured limit."
+      ),
   });
 
 
@@ -1721,6 +2084,8 @@ app.post(
 
   requireAuth,
 
+  dailyVoucherAttemptLimiter,
+
   voucherRedeemLimiter,
 
   async (req, res) => {
@@ -1822,6 +2187,8 @@ app.post(
   requireAuth,
 
   requireBookingIdempotencyKey,
+
+  dailyBookingRequestLimiter,
 
   bookingCreationLimiter,
 
@@ -2595,6 +2962,8 @@ app.post(
 
   requireAuth,
 
+  dailyCancellationRequestLimiter,
+
   cancellationRequestLimiter,
 
   async (req, res) => {
@@ -3248,6 +3617,8 @@ app.patch(
 app.post(
   "/api/contact",
 
+  dailyContactSubmissionLimiter,
+
   contactLimiter,
 
   async (req, res) => {
@@ -3627,6 +3998,8 @@ app.post(
 
   requireAdmin,
 
+  dailyEmailReplyLimiter,
+
   adminEmailLimiter,
 
   async (req, res) => {
@@ -3660,6 +4033,21 @@ app.post(
           success: false,
           message:
             "Reply message is too long.",
+        });
+      }
+
+      if (
+        !resend ||
+        !String(
+          process.env
+            .RESEND_FROM_EMAIL ||
+            ""
+        ).trim()
+      ) {
+        return res.status(503).json({
+          success: false,
+          message:
+            "Email service is not configured.",
         });
       }
 
@@ -3825,6 +4213,66 @@ app.post(
           "Something went wrong while sending the reply.",
       });
     }
+  }
+);
+
+
+// =====================================================
+// FALLBACKS / SAFE ERROR RESPONSES
+// =====================================================
+
+app.use((req, res) => {
+  return res.status(404).json({
+    success: false,
+    message:
+      "API endpoint not found.",
+  });
+});
+
+
+app.use(
+  (error, req, res, next) => {
+    if (res.headersSent) {
+      return next(error);
+    }
+
+    if (
+      error?.type ===
+        "entity.too.large"
+    ) {
+      return res.status(413).json({
+        success: false,
+        message:
+          "Request body is too large.",
+      });
+    }
+
+    if (
+      error instanceof
+        SyntaxError &&
+      error.status === 400 &&
+      Object.prototype.hasOwnProperty.call(
+        error,
+        "body"
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Request body contains invalid JSON.",
+      });
+    }
+
+    logServerError(
+      "Unhandled API error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "An unexpected server error occurred.",
+    });
   }
 );
 

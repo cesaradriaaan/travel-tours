@@ -1,7 +1,9 @@
 import {
+  useEffect,
   useRef,
   useState,
 } from "react";
+import { useLocation } from "react-router-dom";
 import {
   ChevronDown,
   CircleHelp,
@@ -11,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { sendContactMessage } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import "./Contact.css";
 
 const faqItems = [
@@ -36,6 +39,14 @@ const faqItems = [
   },
 ];
 
+const contactTopics = [
+  "Trip planning",
+  "Booking request",
+  "Itinerary help",
+  "Privacy or account data request",
+  "General question",
+];
+
 const initialForm = {
   name: "",
   email: "",
@@ -44,14 +55,55 @@ const initialForm = {
 };
 
 export default function Contact() {
+  const location = useLocation();
+  const { user, profile } = useAuth();
   const submitLockRef = useRef(false);
 
-  const [form, setForm] = useState(initialForm);
+  const requestedTopic =
+    contactTopics.includes(
+      location.state?.topic
+    )
+      ? location.state.topic
+      : initialForm.topic;
+
+  const [form, setForm] = useState(
+    () => ({
+      ...initialForm,
+      topic: requestedTopic,
+    })
+  );
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
+
+  useEffect(() => {
+    setForm((current) => {
+      const nextName =
+        current.name ||
+        profile?.full_name ||
+        "";
+
+      const nextEmail =
+        current.email ||
+        user?.email ||
+        "";
+
+      if (
+        nextName === current.name &&
+        nextEmail === current.email
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        name: nextName,
+        email: nextEmail,
+      };
+    });
+  }, [profile?.full_name, user?.email]);
 
   const validate = () => {
     const next = {};
@@ -248,10 +300,13 @@ export default function Contact() {
                   onChange={updateField}
                   disabled={isSubmitting}
                 >
-                  <option>Trip planning</option>
-                  <option>Booking request</option>
-                  <option>Itinerary help</option>
-                  <option>General question</option>
+                  {contactTopics.map(
+                    (topic) => (
+                      <option key={topic}>
+                        {topic}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 

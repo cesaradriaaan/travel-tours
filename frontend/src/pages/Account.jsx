@@ -970,6 +970,65 @@ export default function Account() {
               </p>
             )}
           </section>
+
+
+          <section className="account-card account-privacy-card">
+            <div className="account-privacy-card__heading">
+              <ShieldCheck
+                size={24}
+                aria-hidden="true"
+              />
+
+              <div>
+                <span className="eyebrow">
+                  Your Privacy
+                </span>
+
+                <h2>
+                  Privacy &amp;
+                  Account Data
+                </h2>
+              </div>
+            </div>
+
+            <p>
+              Review how your data is
+              handled or submit a
+              verified request to
+              access, correct, or
+              delete eligible account
+              information.
+            </p>
+
+            <div className="account-actions">
+              <Link
+                to="/privacy-policy"
+                className="btn btn-secondary"
+              >
+                Privacy Policy
+              </Link>
+
+              <Link
+                to="/contact"
+                state={{
+                  topic:
+                    "Privacy or account data request",
+                }}
+                className="btn btn-secondary"
+              >
+                Submit Data Request
+              </Link>
+            </div>
+
+            <p className="account-privacy-note">
+              Requests are reviewed and
+              identity-verified before
+              any account data is
+              changed or removed. Some
+              transaction records may
+              need to be retained.
+            </p>
+          </section>
         </div>
       </div>
 
