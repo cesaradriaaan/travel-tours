@@ -1629,20 +1629,28 @@ app.post(
           ? req.body.password
           : "";
 
+      const captchaToken =
+        typeof req.body?.captchaToken ===
+        "string"
+          ? req.body.captchaToken.trim()
+          : "";
+
       if (
         !email ||
-        !password
+        !password ||
+        !captchaToken
       ) {
         return res.status(400).json({
           success: false,
           message:
-            "Email and password are required.",
+            "Email, password, and security verification are required.",
         });
       }
 
       if (
         email.length > 254 ||
-        password.length > 1024
+        password.length > 1024 ||
+        captchaToken.length > 8192
       ) {
         return res.status(400).json({
           success: false,
@@ -1690,6 +1698,10 @@ app.post(
               JSON.stringify({
                 email,
                 password,
+                gotrue_meta_security: {
+                  captcha_token:
+                    captchaToken,
+                },
               }),
           }
         );
@@ -1751,6 +1763,21 @@ app.post(
             success: false,
             message:
               "Please verify your email address before logging in.",
+          });
+        }
+
+        if (
+          authCode.includes(
+            "captcha_failed"
+          ) ||
+          authMessage.includes(
+            "captcha"
+          )
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Security verification expired or failed. Please try again.",
           });
         }
 

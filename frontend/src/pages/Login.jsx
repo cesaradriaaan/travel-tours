@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import {
   Link,
   Navigate,
@@ -26,11 +27,16 @@ import { useAuth } from "../context/AuthContext";
 import { loginWithPassword } from "../services/api";
 import "./Login.css";
 
+const HCAPTCHA_SITE_KEY = String(
+  import.meta.env.VITE_HCAPTCHA_SITE_KEY || ""
+).trim();
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading } = useAuth();
   const submitLockRef = useRef(false);
+  const captchaRef = useRef(null);
 
   const from = getSafeInternalPath(
     location.state?.from
@@ -42,6 +48,7 @@ export default function Login() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -78,6 +85,18 @@ export default function Login() {
       return;
     }
 
+    if (!HCAPTCHA_SITE_KEY) {
+      setError(
+        "Security verification is unavailable. Please try again later."
+      );
+      return;
+    }
+
+    if (!captchaToken) {
+      setError("Please complete the security verification.");
+      return;
+    }
+
     submitLockRef.current = true;
 
     try {
@@ -87,7 +106,8 @@ export default function Login() {
       const data =
         await loginWithPassword(
           form.email.trim(),
-          form.password
+          form.password,
+          { captchaToken }
         );
 
       if (!data.session?.accessToken || !data.session?.refreshToken) {
@@ -111,6 +131,8 @@ export default function Login() {
         loginError.message || "Unable to log in. Please try again."
       );
     } finally {
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken("");
       submitLockRef.current = false;
       setSubmitting(false);
     }
@@ -228,6 +250,30 @@ export default function Login() {
                   </button>
                 </span>
               </label>
+
+              {HCAPTCHA_SITE_KEY && (
+                <div
+                  aria-label="Security verification"
+                  style={{ display: "flex", justifyContent: "center" }}
+                >
+                  <HCaptcha
+                    ref={captchaRef}
+                    sitekey={HCAPTCHA_SITE_KEY}
+                    size="compact"
+                    onVerify={(token) => {
+                      setCaptchaToken(token);
+                      setError("");
+                    }}
+                    onExpire={() => setCaptchaToken("")}
+                    onError={() => {
+                      setCaptchaToken("");
+                      setError(
+                        "Security verification failed to load. Please try again."
+                      );
+                    }}
+                  />
+                </div>
+              )}
 
               {error && (
                 <div className="login-notice login-notice--error" role="alert">

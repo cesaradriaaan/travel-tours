@@ -630,6 +630,10 @@ export async function loginWithPassword(
         JSON.stringify({
           email,
           password,
+          captchaToken:
+            typeof options.captchaToken === "string"
+              ? options.captchaToken.trim()
+              : "",
         }),
     }
   );
