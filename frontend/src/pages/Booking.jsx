@@ -2011,7 +2011,7 @@ export default function Booking() {
                           .value
                       )
                     }
-                    placeholder="e.g. Mara Villanueva"
+                    placeholder="e.g. Addy Lyn"
                     autoComplete="name"
                   />
 

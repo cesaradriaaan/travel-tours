@@ -115,3 +115,11 @@
     padding: 2rem 1.25rem 2.75rem;
   }
 }
+
+.register-form .login-captcha {
+  grid-column: 1 / -1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

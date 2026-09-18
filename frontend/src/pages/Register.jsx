@@ -270,7 +270,7 @@ export default function Register() {
                     name="fullName"
                     value={form.fullName}
                     onChange={updateField}
-                    placeholder="Mara Villanueva"
+                    placeholder="e.g. Addy Lyn"
                     autoComplete="name"
                     required
                     disabled={submitting}
