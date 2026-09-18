@@ -259,7 +259,7 @@ export default function Login() {
                   <HCaptcha
                     ref={captchaRef}
                     sitekey={HCAPTCHA_SITE_KEY}
-                    size="compact"
+                    size="normal"
                     onVerify={(token) => {
                       setCaptchaToken(token);
                       setError("");

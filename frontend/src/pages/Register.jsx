@@ -175,7 +175,7 @@ export default function Register() {
     } catch (registrationError) {
       setError(
         registrationError.message ||
-          "Unable to create account."
+        "Unable to create account."
       );
     } finally {
       captchaRef.current?.resetCaptcha();
@@ -374,13 +374,13 @@ export default function Register() {
 
               {HCAPTCHA_SITE_KEY && (
                 <div
+                  className="login-captcha"
                   aria-label="Security verification"
-                  style={{ display: "flex", justifyContent: "center" }}
                 >
                   <HCaptcha
                     ref={captchaRef}
                     sitekey={HCAPTCHA_SITE_KEY}
-                    size="compact"
+                    size="normal"
                     onVerify={(token) => {
                       setCaptchaToken(token);
                       setError("");
