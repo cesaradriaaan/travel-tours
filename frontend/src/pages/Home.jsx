@@ -97,7 +97,7 @@ export default function Home() {
                 alt={activeHero.title}
                 loading="eager"
                 decoding="async"
-                fetchPriority={activeSlide === 0 ? "high" : "auto"}
+                fetchpriority={activeSlide === 0 ? "high" : "auto"}
                 width="800"
                 height="1000"
                 onLoad={markImageLoaded}
@@ -108,6 +108,10 @@ export default function Home() {
                   )
                 }
               />
+              <div className="hero__caption" aria-live="off">
+                <span>{activeHero.label}</span>
+                <strong>{activeHero.title}</strong>
+              </div>
             </div>
             <div className="hero__float hero__float--one" aria-hidden="true">
               <MapPinned size={18} />

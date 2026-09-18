@@ -40,7 +40,7 @@ export default function Gallery({ images, alt }) {
           sizes="(max-width: 768px) 94vw, 1200px"
           alt={`${alt} - photo ${index + 1}`}
           decoding="async"
-          fetchPriority="high"
+          fetchpriority="high"
           width="1600"
           height="800"
           onLoad={markImageLoaded}

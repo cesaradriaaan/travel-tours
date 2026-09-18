@@ -263,14 +263,14 @@ function RouteEffects() {
       ).href
     );
 
-    setHeadLink("icon", "/favicon.svg");
+    setHeadLink("icon", "/favicon.svg?v=2");
     setHeadLink(
       "apple-touch-icon",
-      "/apple-touch-icon.png"
+      "/apple-touch-icon.png?v=2"
     );
     setHeadLink(
       "manifest",
-      "/site.webmanifest"
+      "/site.webmanifest?v=2"
     );
 
     window.scrollTo(0, 0);
