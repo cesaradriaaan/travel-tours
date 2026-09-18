@@ -5,7 +5,6 @@ import {
 import {
   ArrowRight,
   CircleCheckBig,
-  Compass,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -26,6 +25,7 @@ import {
 import { supabase } from "../lib/supabaseClient";
 import { getSafeInternalPath } from "../lib/safeNavigation";
 import { useAuth } from "../context/AuthContext";
+import BrandMark from "../components/BrandMark";
 
 import "./Login.css";
 import "./Register.css";
@@ -200,7 +200,7 @@ export default function Register() {
         >
           <Link to="/" className="login-brand" aria-label="AddyVenture home">
             <span className="login-brand__mark" aria-hidden="true">
-              <Compass size={23} strokeWidth={2.4} />
+              <BrandMark />
             </span>
             <span>
               <strong>AddyVenture</strong>

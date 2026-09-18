@@ -6,12 +6,12 @@ import {
 import {
   Menu,
   X,
-  Compass,
   UserRound,
 } from "lucide-react";
 
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
+import BrandMark from "./BrandMark";
 
 import "./Navbar.css";
 
@@ -86,11 +86,7 @@ export default function Navbar() {
           className="navbar__logo"
           onClick={() => setOpen(false)}
         >
-          <Compass
-            size={22}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
+          <BrandMark />
           <span>AddyVenture Travel & Tours</span>
         </NavLink>
 

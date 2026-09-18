@@ -70,14 +70,9 @@
   line-height: 1.25;
 }
 
-.footer__logo svg {
-  flex: 0 0 auto;
-  color: var(--amber-gold);
-  transition: transform 0.35s var(--ease);
-}
-
-.footer__brand:hover .footer__logo svg {
-  transform: rotate(24deg);
+.footer__logo .brand-mark {
+  width: 1.8rem;
+  height: 1.8rem;
 }
 
 .footer__brand p {

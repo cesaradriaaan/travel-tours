@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Compass, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import BrandMark from "./BrandMark";
 import "./Footer.css";
 
 export default function Footer() {
@@ -9,7 +10,7 @@ export default function Footer() {
         <div className="container footer__inner">
           <div className="footer__brand">
             <div className="footer__logo">
-              <Compass size={20} aria-hidden="true" />
+              <BrandMark />
               <span>AddyVenture Travel & Tours</span>
             </div>
             <p>

@@ -4,7 +4,6 @@ import {
 } from "react";
 import {
   ArrowRight,
-  Compass,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -25,6 +24,7 @@ import { supabase } from "../lib/supabaseClient";
 import { getSafeInternalPath } from "../lib/safeNavigation";
 import { useAuth } from "../context/AuthContext";
 import { loginWithPassword } from "../services/api";
+import BrandMark from "../components/BrandMark";
 import "./Login.css";
 
 const HCAPTCHA_SITE_KEY = String(
@@ -147,7 +147,7 @@ export default function Login() {
         <aside className="login-story" aria-label="AddyVenture introduction">
           <Link to="/" className="login-brand" aria-label="AddyVenture home">
             <span className="login-brand__mark" aria-hidden="true">
-              <Compass size={23} strokeWidth={2.4} />
+              <BrandMark />
             </span>
             <span>
               <strong>AddyVenture</strong>

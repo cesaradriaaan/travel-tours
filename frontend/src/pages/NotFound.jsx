@@ -1,5 +1,6 @@
-import { Compass, Home, MapPinned } from "lucide-react";
+import { Home, MapPinned } from "lucide-react";
 import { Link } from "react-router-dom";
+import BrandMark from "../components/BrandMark";
 
 import "./NotFound.css";
 
@@ -7,8 +8,8 @@ export default function NotFound() {
   return (
     <section className="not-found" aria-labelledby="not-found-title">
       <div className="container not-found__inner">
-        <div className="not-found__compass" aria-hidden="true">
-          <Compass size={54} strokeWidth={1.8} />
+        <div className="not-found__emblem" aria-hidden="true">
+          <BrandMark />
         </div>
 
         <span className="not-found__code">404</span>

@@ -33,7 +33,6 @@ body .navbar { --navbar-height: 72px; background: rgba(250, 248, 242, .98); bord
 body .navbar::before { display: none; }
 body .navbar .navbar__inner { max-width: 1440px; min-height: var(--navbar-height); padding-block: .65rem; }
 body .navbar__logo { font-size: clamp(1rem, 1.2vw, 1.16rem); letter-spacing: -.025em; }
-body .navbar__logo svg { color: var(--coral-tide); filter: none; }
 body .navbar__links { gap: clamp(.7rem, 1.3vw, 1.25rem); }
 body .navbar__link { font-size: .84rem; font-weight: 650; color: var(--ink); }
 body .navbar__link::after { height: 2px; bottom: .25rem; background: var(--coral-tide); }
@@ -245,7 +244,6 @@ body .legal-content { max-width: 74ch; }
 body .legal-content > section { border-color: var(--line); }
 body .legal-contact-card { border-radius: var(--radius-md); box-shadow: none; }
 body .not-found { background: #e7f0e9; }
-body .not-found__compass { border: 0; background: transparent; box-shadow: none; }
 body .not-found h1 { max-width: 16ch; }
 
 @media (max-width: 1100px) {

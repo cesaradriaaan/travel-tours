@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  Compass,
   Mail,
 } from "lucide-react";
 
 import "./LegalPage.css";
+import BrandMark from "./BrandMark";
 
 const legalLinks = [
   {
@@ -60,7 +60,7 @@ export default function LegalPage({
       <div className="container legal-layout">
         <aside className="legal-nav" aria-label="Legal pages">
           <div className="legal-nav__brand">
-            <Compass size={19} aria-hidden="true" />
+            <BrandMark />
             <span>Travel with clarity</span>
           </div>
 

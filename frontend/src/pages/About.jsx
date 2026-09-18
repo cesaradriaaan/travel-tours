@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Compass, HeartHandshake, MapPinned, Route, ShieldCheck } from "lucide-react";
+import { HeartHandshake, MapPinned, Route, ShieldCheck } from "lucide-react";
+import BrandMark from "../components/BrandMark";
 import "./About.css";
 
 const values = [
@@ -43,7 +44,7 @@ export default function About() {
           </div>
 
           <div className="about-hero__card" aria-label="AddyVenture travel planning summary">
-            <Compass size={34} aria-hidden="true" />
+            <BrandMark />
             <p className="about-hero__quote">From dream destinations to real <em>AddyVentures.</em></p>
             <p>Start with a place you love, build the days around it, then review everything before you send your request.</p>
           </div>

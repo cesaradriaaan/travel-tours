@@ -74,20 +74,14 @@
   transform: translateY(-1px);
 }
 
-.navbar__logo svg {
-  width: 24px;
-  height: 24px;
-  color: var(--coral-tide);
-
-  filter: drop-shadow(
-    0 3px 7px rgba(255, 111, 97, 0.18)
-  );
-
-  transition: transform 0.35s var(--ease);
+.navbar__logo .brand-mark {
+  width: 1.8rem;
+  height: 1.8rem;
+  transition: transform 0.2s var(--ease);
 }
 
-.navbar__logo:hover svg {
-  transform: rotate(18deg);
+.navbar__logo:hover .brand-mark {
+  transform: translateY(-1px);
 }
 
 

@@ -87,8 +87,9 @@
   font-weight: 700;
 }
 
-.legal-nav__brand svg {
-  color: var(--coral-deep);
+.legal-nav__brand .brand-mark {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .legal-nav > p {

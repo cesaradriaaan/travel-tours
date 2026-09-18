@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, MapPinned, Route, Compass } from "lucide-react";
+import { ShieldCheck, MapPinned, Route, Clock3, Waypoints } from "lucide-react";
 import TourCard from "../components/TourCard";
 import { tours } from "../data/tours";
 import {
@@ -122,7 +122,7 @@ export default function Home() {
               <span>Custom routes</span>
             </div>
             <div className="hero__float hero__float--three" aria-hidden="true">
-              <Compass size={18} />
+              <Clock3 size={18} />
               <span>Your pace</span>
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function Home() {
               <p>No hidden fees. The price you see is the price you pay.</p>
             </div>
             <div className="why-us__item">
-              <Compass size={26} />
+              <Waypoints size={26} />
               <h3>Flexible planning</h3>
               <p>Add, remove, or reorder tours anytime before you book.</p>
             </div>
