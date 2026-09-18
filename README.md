@@ -18,10 +18,49 @@ Then open the local URL Vite prints (usually `http://localhost:517_`).
 
 ```
 travel-tours/
-├── docs/           Planning docs (read these first)
-├── frontend/       React + Vite app (all current code lives here)
-└── backend/        Placeholder for Phase 2
+├── backend/
+│   ├── server.js
+│   ├── supabase.js
+│   ├── package.json
+│   ├── package-lock.json
+│   └── README.md
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   ├── lib/
+│   │   │   └── supabaseClient.js
+│   │   └── App.jsx
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── vite.config.js
+│   └── vercel.json
+│
+├── docs/
+│   ├── PROJECT_PLAN.md
+│   ├── SITE_MAP.md
+│   ├── UI_DESIGN.md
+│   ├── UX_FLOW.md
+│   ├── BOOKING_SPEC.md
+│   └── TESTING_CHECKLIST.md
+│
+├── README.md
+└── .gitignore
 ```
+## Tech Stack
+
+Frontend: React + Vite, React Router, JavaScript, HTML/CSS
+Backend: Node.js + Express.js
+Database/Auth: Supabase
+Email: Resend
+Frontend Hosting: Vercel
+Backend Hosting: Render
+Version Control: Git + GitHub
 
 ## Build Status
 
@@ -48,3 +87,4 @@ travel-tours/
 - [x] Phase 11 — Deployed the backend to Render and the frontend to Vercel, then configured production environment variables, CORS, Supabase redirects, and routing.
 
 - [x] Phase 12 — Completed final production QA for authentication, bookings, admin workflows, cancellations, vouchers, responsive behavior, and live-site functionality.
+
